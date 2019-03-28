@@ -1,8 +1,8 @@
 # SpeculativeArtificialIntelligence / Exp. #1 
 # (audiovisual associations)
-The program generates a model of feed-forward NN with 30 inputs and 13824 outputs.
-30 inputs: FFT analyses of sounds
-13824 outputs: sets the brightness for 13824 LEDs of the lightobject "Interspace #3"
+The program generates a model of feed-forward NN with 30 inputs and 13824 outputs.<br>
+30 inputs: FFT analyses of sounds<br>
+13824 outputs: sets the brightness for 13824 LEDs of the lightobject "Interspace #3"<br>
 Find a documentation abotu this work on: https://vimeo.com/280350114
 
 The training data can be downloaded here:
