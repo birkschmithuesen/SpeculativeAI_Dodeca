@@ -3,9 +3,10 @@
 The program generates a model of feed-forward NN with 30 inputs and 13824 outputs.
 30 inputs: FFT analyses of sounds
 13824 outputs: sets the brightness for 13824 LEDs of the lightobject "Interspace #3"
+Find a documentation abotu this work on: https://vimeo.com/280350114
 
 The training data can be downloaded here:
-www.birkschmithuesen.cpom/SAI/traingsdata.txt
+www.birkschmithuesen.com/SAI/traingsdata.txt
 
 The program predicts the output for the lightobject in real time from received FFT data.
 The communication is done via OSC.<br>
