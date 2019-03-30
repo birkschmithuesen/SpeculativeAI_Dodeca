@@ -110,10 +110,15 @@ def initialize_server():
   dispatcher.map("/train", train_handler)
   dispatcher.map("/newModel", newModel_handler)
 
-  server = osc_server.ThreadingOSCUDPServer(
+  try:
+    server = osc_server.ThreadingOSCUDPServer(
       (args.ip, args.port), dispatcher)
-  server_thread=threading.Thread(target=server.serve_forever)
-  server_thread.start()
+    server_thread=threading.Thread(target=server.serve_forever)
+    server_thread.start()
+  except OSError as e:
+    server = None
+    server_thread = None
+    print(e)
 
 
 def ledoutput():
