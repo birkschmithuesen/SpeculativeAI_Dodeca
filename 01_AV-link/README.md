@@ -16,3 +16,9 @@ Also see: line 153 and line 102
 
 # communication diagram:
 Ableton Live(sound program)/FFT analysis => 30 float values via OSC (NN input) => python/neural network => 13824 float values via OSC (NN output) => JAVA(visualizer on screen and light object) 
+
+## packages/files needed
+TensorFlow (pip tensorflow)
+Keras (pip keras)
+PythonOsc (pip python-osc)
+www.birkschmithuesen.com/SAI/traingsdata.txt
