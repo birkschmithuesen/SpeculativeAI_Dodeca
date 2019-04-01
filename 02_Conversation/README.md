@@ -1,4 +1,4 @@
-# SpeculativeArtificialIntelligence / Exp. #2 (closed circuit)
+# SpeculativeArtificialIntelligence / Exp. #2 (conversation)
 
 The aesthetic experiment Speculative Artificial Intelligence / Exp. #2 investigates the autonomous creativity of AI systems. Communication between two AI takes place in a human comprehensible range through direct audiovisual translation. The systems are interconnected to create a closed circuit in which both AI interact. Visitors can follow the exchange and intuitively experience the behavior of the neural networks. One system can "hear" sounds and "create" images, the other system can "see" images and "play" sounds.
 
