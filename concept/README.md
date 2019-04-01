@@ -11,8 +11,8 @@ https://vimeo.com/280350114
 
 ## conceptual notes
 <b>conversion theory</b><br>
-![My image](https://github.com/birkschmithuesen/SpeculativeArtificialIntelligence/blob/master/concept/00_conversation_theory.png)
+![My image](https://github.com/birkschmithuesen/SpeculativeArtificialIntelligence/blob/master/concept/00_conversation_theory.png)<br>
 <b>communicaion sketch SAI / Exp. #2</b><br>
-![My image](https://github.com/birkschmithuesen/SpeculativeArtificialIntelligence/blob/master/concept/01_schematics_communication.png)
+![My image](https://github.com/birkschmithuesen/SpeculativeArtificialIntelligence/blob/master/concept/01_schematics_communication.png)<br>
 <b>message design SAI / Exp. #2</b><br>
 ![My image](https://github.com/birkschmithuesen/SpeculativeArtificialIntelligence/blob/master/concept/02_message_design.png)
