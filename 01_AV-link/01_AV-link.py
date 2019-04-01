@@ -35,38 +35,10 @@ e1 = threading.Event()
 e2 = threading.Event()
 
 
-def fft_handler(unused_addr, args_1,args_2,args_3,args_4,args_5,args_6,args_7,args_8,args_9,args_10,args_11,args_12,args_13,args_14,args_15,args_16,args_17,args_18,args_19,args_20, args_21, args_22,args_23,args_24,args_25,args_26,args_27,args_28,args_29,args_30):
-    #print('received ftt paket. list-length: ',len(fft), '   first arg: ', args_1)
-    fft.append(args_1)
-    fft.append(args_2)
-    fft.append(args_3)
-    fft.append(args_4)
-    fft.append(args_5)
-    fft.append(args_6)
-    fft.append(args_7)
-    fft.append(args_8)
-    fft.append(args_9)
-    fft.append(args_10)
-    fft.append(args_11)
-    fft.append(args_12)
-    fft.append(args_13)
-    fft.append(args_14)
-    fft.append(args_15)
-    fft.append(args_16)
-    fft.append(args_17)
-    fft.append(args_18)
-    fft.append(args_19)
-    fft.append(args_20)
-    fft.append(args_21)
-    fft.append(args_22)
-    fft.append(args_23)
-    fft.append(args_24)
-    fft.append(args_25)
-    fft.append(args_26)
-    fft.append(args_27)
-    fft.append(args_28)
-    fft.append(args_29)
-    fft.append(args_30)
+def fft_handler(*args):
+    #print('received ftt paket. list-length: ',len(fft), '   first arg: ', args[1])
+    for arg in args[1:]:
+      fft.append(arg)
     e1.set()
 
 frameCount=0;
@@ -110,10 +82,15 @@ def initialize_server():
   dispatcher.map("/train", train_handler)
   dispatcher.map("/newModel", newModel_handler)
 
-  server = osc_server.ThreadingOSCUDPServer(
-      (args.ip, args.port), dispatcher)
-  server_thread=threading.Thread(target=server.serve_forever)
-  server_thread.start()
+  try:
+      server = osc_server.ThreadingOSCUDPServer(
+        (args.ip, args.port), dispatcher)
+      server_thread=threading.Thread(target=server.serve_forever)
+      server_thread.start()
+  except OSError as e:
+      server = None
+      server_thread = None
+      print(e)
 
 
 def ledoutput():
