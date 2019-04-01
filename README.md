@@ -10,3 +10,8 @@ Issues for that project are tagged with the label <b>01_AV-link</b>.
 Two independent neural networks are trained with sound->visual and visual->sound associations. They are connected to each other in a closed circuit over the analog world with a speaker->microphone and light object->camera. <br>
 For more details and code see the folder <b>02_Conversation</b>. <br>
 Issues for that project are tagged with the label <b>02_Conversation</b>.
+
+## packages needed
+TensorFlow (pip tensorflow)
+Keras (pip keras)
+PythonOsc (pip python-osc)
