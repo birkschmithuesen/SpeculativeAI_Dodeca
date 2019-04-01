@@ -13,6 +13,6 @@ An ordered project list is under Projects: https://github.com/birkschmithuesen/S
 and Projects: https://github.com/birkschmithuesen/SpeculativeArtificialIntelligence/projects/1
 
 ## packages needed
-TensorFlow (pip tensorflow)
-Keras (pip keras)
+TensorFlow (pip tensorflow)<br>
+Keras (pip keras)<br>
 PythonOsc (pip python-osc)
