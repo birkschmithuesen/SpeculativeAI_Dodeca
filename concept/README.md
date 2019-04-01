@@ -10,4 +10,9 @@ The state of the neural networks is reflected in simple light brightness and pur
 https://vimeo.com/280350114
 
 ## conceptual notes
+<b>conversion theory</b><br>
 ![My image](https://github.com/birkschmithuesen/SpeculativeArtificialIntelligence/blob/master/concept/00_conversation_theory.png)
+<b>communicaion sketch SAI / Exp. #2</b><br>
+![My image](https://github.com/birkschmithuesen/SpeculativeArtificialIntelligence/blob/master/concept/01_schematics_communication.png)
+<b>message design SAI / Exp. #2</b><br>
+![My image](https://github.com/birkschmithuesen/SpeculativeArtificialIntelligence/blob/master/concept/02_message_design.png)
