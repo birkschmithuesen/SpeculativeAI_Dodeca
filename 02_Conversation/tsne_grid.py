@@ -14,6 +14,10 @@ from tensorflow.python.keras.preprocessing import image
 from tensorflow.python.keras.models import Model, Sequential
 from tensorflow.python.keras.layers import GlobalAveragePooling2D
 
+GENERATE_BIG_PICTURE = True
+TRANSFORM_FROM_CNN_DIM_TO_SOUND_DIM = True
+CNN_DIM = 512
+SOUND_DIM = 5
 
 out_dim = 6  # number of images in a row/column in output image
 in_dir = './camera_view/video_frames/'  # source directory for images
@@ -22,7 +26,7 @@ out_dir = './'  # destination directory for output image
 out_name = 'out_image.jpg'  # name of output image file
 to_plot = np.square(out_dim)
 out_res = 224  # width/height of images in output square image
-perplexity = 10  # TSNE perplexity - the TSNE is responsibly for projecting the multi dimensional vector into 2 dimensional space
+perplexity = 10  # TSNE perplexity
 tsne_iter = 5000000  # number of iterations in TSNE algorithm
 
 if out_dim == 1:
@@ -57,7 +61,7 @@ def load_img(input_dir):
     img_collection = []
     file_names = []
     for idx, img in enumerate(pred_img):
-        print("Loading image", idx+1, ":", img)
+        print("Loading image", idx + 1, ":", img)
         file_names.append(img)
         img_collection.append(image.load_img(img, target_size=(out_res, out_res)))
     if np.square(out_dim) > len(img_collection):
@@ -82,7 +86,7 @@ def get_activations(model, img_collection, file_names):
     for idx, img in enumerate(img_collection):
         # if idx == to_plot:
         #     break
-        print("Processing image", idx+1, ":", img)
+        print("Processing image", idx + 1, ":", img)
         img = img.resize((out_res, out_res), Image.ANTIALIAS)
         x = image.img_to_array(img)
         x = np.expand_dims(x, axis=0)
@@ -92,7 +96,7 @@ def get_activations(model, img_collection, file_names):
     np.savetxt("out_vectors.csv", list(map(list, zip(*activations))), delimiter=";", header=header)
     distances = distance_matrix(activations, activations)
     np.savetxt("out_distances.csv", distances, delimiter=";", header=header)
-    return activations
+    return activations, header
 
 
 def generate_tsne(activations):
@@ -134,6 +138,50 @@ def save_tsne_grid(img_collection, x_2d, output_res, output_dim, output_dir):
     im = image.array_to_img(out)
     im.save(output_dir + out_name, quality=100)
 
+def generate_M_and_MG(seed, deviation):
+    """
+    This function generates random matrices M and MG
+    :param seed: seed for the random number generator
+    :param deviation: for generate following a normal distribution. Small deviation in order to generate numbers 
+    close to cero
+    :return: matrices M and MG
+    """
+    np.random.seed(seed=seed)
+    M = np.random.uniform(low=-1, high=1, size=(CNN_DIM, SOUND_DIM))
+    MG = np.random.normal(0, scale=deviation, size=(CNN_DIM, SOUND_DIM))
+    return M, MG
+
+def get_M_and_MG_from_file():
+    """
+    This function loads both matrices from files
+    :return: matrices M and MG
+    """
+    M = np.load('matrixUniform.npy')
+    MG = np.load('matrixGaussian.npy')
+    return M, MG
+
+def get_M_from_file_and_generate_MG(seed, deviation):
+    """
+    This function loads M from file and generates MG
+    :param seed: seed for the random number generator
+    :param deviation: for generate following a normal distribution. Small deviation in order to generate numbers 
+    close to cero
+    :return: matrices M and MG
+    """
+    np.random.seed(seed=seed)
+    M = np.load('matrixUniform.npy')
+    MG = np.random.normal(0, scale=deviation, size=(CNN_DIM, SOUND_DIM))
+    return M, MG
+
+def sigmoid(mat, coef):
+    """
+    This function uses sigmoid function to map all values in 'mat' in the range [0,1]
+    :param mat: a list of vectors. In this case each vector represents one image
+    :param coef: modify the slope of the sigmoid: big values of coef make the function shrink
+    :return: the matrix with all the values in [0,1]
+    """
+    return 1 / (1 + np.exp(-mat * coef))  # Sigmoid function
+
 
 def main():
     model = build_model()
@@ -141,14 +189,40 @@ def main():
 
     img_collection, names_of_file = load_img(in_dir)
 
-    activations = get_activations(model, img_collection, names_of_file)
+    activations, header = get_activations(model, img_collection, names_of_file)
 
-    # Birk, from here it is only for generating the image. Actually, you do not need it but it is very cool to see it
-    # and it is useful in order to understand the nature of the vectors that the CNN produce
-    print("Generating 2D representation.")
-    x_2dim = generate_tsne(activations)
-    print("Generating image grid.")
-    save_tsne_grid(img_collection, x_2dim, out_res, out_dim, out_dir)
+    if TRANSFORM_FROM_CNN_DIM_TO_SOUND_DIM:
+        # M: is a random (uniform dist.) matrix that projects CNN_DIM dimensional vectors in SOUND_DIM dim
+        # MG: is a random (normal dist.) matrix if you want to slightly modify M
+        # comment/uncomment next lines to obtain what you want
+        # change the seed to obtain different matrices
+        M, MG = generate_M_and_MG(seed=2019, deviation=0.01)
+        # M, MG = get_M_and_MG_from_file()
+        # M, MG = get_M_from_file_and_generate_MG(seed=2019, deviation=0.01)
+
+        # you can modify M a little bit uncommenting next line
+        # M = M + MG
+
+        # if you want to store the matrices in files you need to uncomment next lines
+        # Be careful!!! if the matrices already exist then these instructions will override them
+        # np.save('matrixUniform', M)
+        # np.save('matrixGaussian', MG)
+
+        act_5dim = activations @ M  # matrix multiplication
+        activations = sigmoid(act_5dim, coef=0.05)  # Sigmoid function 
+        # store in files the new 5dim vectors and the pairwise distances
+        np.savetxt("out_vectors_5d.csv", list(map(list, zip(*activations))), delimiter=";", header=header)
+        distances = distance_matrix(activations, activations)
+        np.savetxt("out_distances_5d.csv", distances, delimiter=";", header=header)
+
+    if GENERATE_BIG_PICTURE:
+        # Birk, from here it is only for generating the image. Actually, you do not need it but it is very cool to see
+        # it and it is useful in order to understand the nature of the vectors that the CNN produce
+        print("Generating 2D representation.")
+        x_2dim = generate_tsne(activations)
+        print("Generating image grid.")
+        save_tsne_grid(img_collection, x_2dim, out_res, out_dim, out_dir)
+
 
 if __name__ == '__main__':
     main()
