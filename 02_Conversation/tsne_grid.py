@@ -22,7 +22,7 @@ out_dir = './'  # destination directory for output image
 out_name = 'out_image.jpg'  # name of output image file
 to_plot = np.square(out_dim)
 out_res = 224  # width/height of images in output square image
-perplexity = 10  # TSNE perplexity
+perplexity = 10  # TSNE perplexity - the TSNE is responsibly for projecting the multi dimensional vector into 2 dimensional space
 tsne_iter = 5000000  # number of iterations in TSNE algorithm
 
 if out_dim == 1:
