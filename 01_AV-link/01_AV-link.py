@@ -36,7 +36,7 @@ e2 = threading.Event()
 
 
 def fft_handler(*args):
-    #print('received ftt paket. list-length: ',len(fft), '   first arg: ', args[1])
+    print('received ftt paket. list-length: ',len(fft), '   first arg: ', args[1])
     for arg in args[1:]:
       fft.append(arg)
     e1.set()
@@ -71,7 +71,7 @@ def initialize_server():
   from pythonosc import dispatcher
   parser = argparse.ArgumentParser()
   parser.add_argument("--ip",
-      default="2.0.0.1", help="The ip to listen on")
+      default="0.0.0.0", help="The ip to listen on")
   parser.add_argument("--port",
       type=int, default=8000, help="The port to listen on")
   args = parser.parse_args()
