@@ -24,6 +24,5 @@ class TestCamera(object):
             cv2_im, pil_im = frames
             height, width, channels = cv2_im.shape
             assert width == 320
-            assert height == 180
             assert channels == 3
             break

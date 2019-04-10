@@ -20,12 +20,16 @@ class Camera():
         :param fps: Frames per second setting of camera
         :return: New Camera object
         """
+        self.frame_width = frame_width
+        self.frame_height = frame_height
         self.video_capture = cv2.VideoCapture(0)
         if not self.video_capture.isOpened():
             raise Exception("Could not open video device")
         # Set properties. Each returns === True on success (i.e. correct resolution)
         self.video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
         self.video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
+        self.actual_frame_width = self.video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)
+        self.actual_frame_height = self.video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
         self.video_capture.set(cv2.CAP_PROP_FPS, fps)
 
     def show_capture(self):
@@ -56,6 +60,11 @@ class Camera():
         :return: Tupel consisting of next opencv frame and python image library frame
         """
         ret, frame = self.video_capture.read()
+        x = (self.actual_frame_width - self.frame_width)/2
+        y = (self.actual_frame_height - self.frame_height)/2
+        x = int(x)
+        y = int(y)
+        frame = frame[y:y+self.frame_height, x:x+self.frame_width]
         cv2_im = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         pil_im = Image.fromarray(cv2_im)
         return frame, pil_im

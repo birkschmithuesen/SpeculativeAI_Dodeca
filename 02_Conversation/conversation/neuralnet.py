@@ -25,8 +25,8 @@ CNN_DIM = 512
 SOUND_DIM = 5
 
 out_dim = 6  # number of images in a row/column in output image
-in_dir = './camera_view/video_frames/'  # source directory for images
-out_dir = './'  # destination directory for output image
+in_dir = '../camera_view/video_frames/'  # source directory for images
+out_dir = '../'  # destination directory for output image
 
 
 to_plot = np.square(out_dim)
@@ -37,11 +37,12 @@ tsne_iter = 5000000  # number of iterations in TSNE algorithm
 if out_dim == 1:
     raise ValueError("Output grid dimension 1x1 not supported.")
 
-if not os.path.exists(out_dir):
-    raise argparse.ArgumentTypeError("'{}' not a valid directory.".format(out_dir))
+if __name__ == '__main__':    
+    if not os.path.exists(out_dir):
+        raise argparse.ArgumentTypeError("'{}' not a valid directory.".format(out_dir))
 
-if not os.path.exists(in_dir):
-    raise argparse.ArgumentTypeError("'{}' not a valid directory.".format(in_dir))
+    if not os.path.exists(in_dir):
+        raise argparse.ArgumentTypeError("'{}' not a valid directory.".format(in_dir))
 
 
 def build_model():
