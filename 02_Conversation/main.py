@@ -18,12 +18,12 @@ camera = Camera(224, 224)
 #camera.show_capture()
 model = neuralnet.build_model()
 model.summary()
-
+count = 0
 for frames in camera:
     cv2_img, pil_img = frames
 
     img_collection = [pil_img]
-    names_of_file = "test"
+    names_of_file = ["test"]
 
     activations, header, img_coll_bn = neuralnet.get_activations(model, img_collection, names_of_file)
 
@@ -31,34 +31,22 @@ for frames in camera:
         if TRANSFORM_USING_PCA:
             pca = neuralnet.load('pca.joblib')
             act_5dim = pca.transform(activations)
-
             # if you want to add some gaussian noise to the 5dim vectors you can uncomment the following 2 lines
             # MG = np.random.normal(0, scale=0.1, size=act_5dim.shape)
             # act_5dim = act_5dim + MG
         else:
-            # M: is a random (uniform dist.) matrix that projects CNN_DIM dimensional vectors in SOUND_DIM dim
-            # MG: is a random (normal dist.) matrix if you want to slightly modify M
-            # comment/uncomment next lines to obtain what you want
-            # change the seed to obtain different matrices
-            M, MG = neuralnet.generate_M_and_MG(seed=2022, deviation=0.01)
-            # M, MG = get_M_and_MG_from_file()
-            # M, MG = get_M_from_file_and_generate_MG(seed=2019, deviation=0.01)
-
-            # you can modify M a little bit uncommenting next line
-            # M = M + MG
-
-            # if you want to store the matrices in files you need to uncomment next lines
-            # Be careful!!! if the matrices already exist then these instructions will override them
-            neuralnet.np.save('matrixUniform', M)
-            neuralnet.np.save('matrixGaussian', MG)
-
+            M, MG = neuralnet.get_M_and_MG_from_file()
             act_5dim = activations @ M  # matrix multiplication
 
-        # activations = sigmoid(act_5dim, coef=0.05)  # Sigmoid function
+        print(act_5dim)
+
+        activations = neuralnet.sigmoid(act_5dim, coef=0.05)  # Sigmoid function
         # activations = act_5dim
-        mins = neuralnet.np.min(act_5dim, 0)
-        maxs = neuralnet.np.max(act_5dim, 0)
-        activations = (act_5dim - mins) / (maxs - mins)
+        #mins = neuralnet.np.min(act_5dim, 0)
+        #maxs = neuralnet.np.max(act_5dim, 0)
+        #print("maxs-mins:")
+        #print((maxs - mins))
+        #activations = (act_5dim - mins) / (maxs - mins)
 
         print(activations)
         client.send_message("/sound", activations[0])

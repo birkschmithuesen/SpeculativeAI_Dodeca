@@ -37,7 +37,7 @@ tsne_iter = 5000000  # number of iterations in TSNE algorithm
 if out_dim == 1:
     raise ValueError("Output grid dimension 1x1 not supported.")
 
-if __name__ == '__main__':    
+if __name__ == '__main__':
     if not os.path.exists(out_dir):
         raise argparse.ArgumentTypeError("'{}' not a valid directory.".format(out_dir))
 
@@ -258,11 +258,15 @@ def main():
 
             act_5dim = activations @ M  # matrix multiplication
 
+        print(act_5dim)
         # activations = sigmoid(act_5dim, coef=0.05)  # Sigmoid function
         # activations = act_5dim
         mins = np.min(act_5dim, 0)
         maxs = np.max(act_5dim, 0)
+        print("maxs-mins:")
+        print((maxs - mins))
         activations = (act_5dim - mins) / (maxs - mins)
+        print(activations)
 
         # store in files the new 5dim vectors and the pairwise distances
         np.savetxt("out_vectors_5d.csv", list(map(list, zip(*activations))), delimiter=";", header=header)
