@@ -3,8 +3,11 @@ Main file that executes the visual conversation part.
 """
 import time
 from pythonosc import udp_client
-from conversation.camera import Camera
+from conversation import vision_camera
+from conversation.vision_camera import Camera
 from conversation import neuralnet
+
+SLIDING_WINDOW_SIZE = 20 # number of frames in sliding window
 
 TRANSFORM_FROM_CNN_DIM_TO_SOUND_DIM = True
 TRANSFORM_USING_PCA = True  # True: transform form 512 to 5 using PCA. Otherwise, using random matrix
@@ -18,12 +21,16 @@ camera = Camera(224, 224)
 #camera.show_capture()
 model = neuralnet.build_model()
 model.summary()
-count = 0
-for frames in camera:
-    cv2_img, pil_img = frames
+act_5dim_sliding = []
+frames_count = 0
 
-    img_collection = [pil_img]
-    names_of_file = ["test"]
+while True:
+
+    for frames in camera:
+        cv2_img, pil_img = frames
+        img_collection = [pil_img]
+        names_of_file = ["test"]
+        break;
 
     activations, header, img_coll_bn = neuralnet.get_activations(model, img_collection, names_of_file)
 
@@ -38,15 +45,17 @@ for frames in camera:
             M, MG = neuralnet.get_M_and_MG_from_file()
             act_5dim = activations @ M  # matrix multiplication
 
-        print(act_5dim)
+        #print(act_5dim)
+        act_5dim_sliding.append(act_5dim[0])
+        if len(act_5dim_sliding) > SLIDING_WINDOW_SIZE:
+            act_5dim_sliding.pop(0)
 
-        activations = neuralnet.sigmoid(act_5dim, coef=0.05)  # Sigmoid function
+        #activations = neuralnet.sigmoid(act_5dim, coef=0.05)  # Sigmoid function
         # activations = act_5dim
-        #mins = neuralnet.np.min(act_5dim, 0)
-        #maxs = neuralnet.np.max(act_5dim, 0)
+        mins = neuralnet.np.min(act_5dim_sliding, 0)
+        maxs = neuralnet.np.max(act_5dim_sliding, 0)
         #print("maxs-mins:")
-        #print((maxs - mins))
-        #activations = (act_5dim - mins) / (maxs - mins)
+        activations = (act_5dim_sliding - mins) / (maxs - mins)
 
-        print(activations)
+        #print(activations)
         client.send_message("/sound", activations[0])
