@@ -43,11 +43,24 @@ class Camera():
         for frames in self:
             (frame, pil_im) = frames
             # Display the resulting frame
+            frame = self.crop_frame(frame)
             cv2.imshow('frame', frame)
             if cv2.waitKey(20) & 0xFF == ord('q'):
                 break
         cv2.destroyAllWindows()
         self.release()
+
+    def crop_frame(self, frame):
+        """
+        Crop given opencv frame to set camera frame size
+        :param frame: Frame to be cropped
+        :return: cropped frame
+        """
+        x = (self.actual_frame_width - self.frame_width)/2
+        y = (self.actual_frame_height - self.frame_height)/2
+        x = int(x)
+        y = int(y)
+        return frame[y:y+self.frame_height, x:x+self.frame_width]
 
     def release(self):
         """
@@ -64,11 +77,7 @@ class Camera():
         :return: Tupel consisting of next opencv frame and python image library frame
         """
         ret, frame = self.video_capture.read()
-        x = (self.actual_frame_width - self.frame_width)/2
-        y = (self.actual_frame_height - self.frame_height)/2
-        x = int(x)
-        y = int(y)
-        frame = frame[y:y+self.frame_height, x:x+self.frame_width]
+        frame = self.crop_frame(frame)
         cv2_im = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         pil_im = Image.fromarray(cv2_im)
         return frame, pil_im

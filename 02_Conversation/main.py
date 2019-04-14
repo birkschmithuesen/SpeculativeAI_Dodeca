@@ -10,7 +10,7 @@ from conversation import neuralnet
 SLIDING_WINDOW_SIZE = 20 # number of frames in sliding window
 
 TRANSFORM_FROM_CNN_DIM_TO_SOUND_DIM = True
-TRANSFORM_USING_PCA = True  # True: transform form 512 to 5 using PCA. Otherwise, using random matrix
+TRANSFORM_USING_PCA = True  # True: transform from 512 to 5 using PCA. Otherwise, using random matrix
 
 OSC_IP_ADDRESS = "localhost"
 OSC_PORT = 8005
@@ -22,7 +22,6 @@ camera = Camera(224, 224)
 model = neuralnet.build_model()
 model.summary()
 act_5dim_sliding = []
-frames_count = 0
 
 while True:
 

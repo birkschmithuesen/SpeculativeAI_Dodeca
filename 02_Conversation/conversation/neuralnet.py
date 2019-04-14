@@ -85,7 +85,6 @@ def binarize_array(numpy_array, threshold=200):
                 numpy_array[i][j] = 0
     return numpy_array
 
-
 def get_activations(model, img_collection, file_names, save_files=False):
     """
     This function computes one vector for each image using the CNN model and store them in 'activations'.
