@@ -1,37 +1,78 @@
 """
 Main file that executes the visual conversation part.
 """
-import time
+import numpy as np
 from pythonosc import udp_client
-from conversation import vision_camera
 from conversation.vision_camera import Camera
-from conversation import neuralnet
+from conversation import neuralnet, configuration, vision_camera
 
-SLIDING_WINDOW_SIZE = 20 # number of frames in sliding window
+SLIDING_WINDOW_SIZE = 50 # number of frames in sliding window
 
 TRANSFORM_FROM_CNN_DIM_TO_SOUND_DIM = True
 TRANSFORM_USING_PCA = True  # True: transform from 512 to 5 using PCA. Otherwise, using random matrix
 
 OSC_IP_ADDRESS = "localhost"
 OSC_PORT = 8005
+CONFIG_PATH = "./conversation_config"
 
-client = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
+SHOW_FRAMES = True #show window frames
 
-camera = Camera(224, 224)
+CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
+
+CAMERA = Camera(224, 224)
 #camera.show_capture()
-model = neuralnet.build_model()
-model.summary()
+MODEL = neuralnet.build_model()
+MODEL.summary()
 act_5dim_sliding = []
+config_tracker = {}
+
+config = configuration.ConversationConfig(CONFIG_PATH)
+print(config.config)
+
+def save_current_config():
+    """
+    safe all current settings of the app
+    """
+    print("Saving current config")
+    config.save_config(config_tracker)
+
+def clip_activation(activation):
+    """
+    Limit activation values betwenn 0 and 1
+    """
+    act_new = []
+    for act in activation:
+        val = act
+        if act < 0.0:
+            val = 0.0
+        if act > 1.0:
+            val = 1.0
+        act_new.append(val)
+    act_new_np = np.array(act_new, dtype="float64")
+    activation_diff = activation - act_new_np
+    if np.count_nonzero(activation_diff) > 0:
+        print("\033[93mClipped activations. Diff:")
+        print(activation_diff)
+        print("\033[0m")
+    return act_new_np
 
 while True:
 
-    for frames in camera:
+    for frames in CAMERA:
         cv2_img, pil_img = frames
+        if SHOW_FRAMES:
+            vision_camera.cv2.imshow('frame', cv2_img)
+            key = vision_camera.cv2.waitKey(20)
+            if key & 0xFF == ord('q'):
+                    vision_camera.cv2.destroyAllWindows()
+                    CAMERA.release()
+            elif key & 0xFF == ord('s'):
+                    save_current_config()
         img_collection = [pil_img]
         names_of_file = ["test"]
         break;
 
-    activations, header, img_coll_bn = neuralnet.get_activations(model, img_collection, names_of_file)
+    activations, header, img_coll_bn = neuralnet.get_activations(MODEL, img_collection, names_of_file)
 
     if TRANSFORM_FROM_CNN_DIM_TO_SOUND_DIM:
         if TRANSFORM_USING_PCA:
@@ -50,11 +91,15 @@ while True:
             act_5dim_sliding.pop(0)
 
         #activations = neuralnet.sigmoid(act_5dim, coef=0.05)  # Sigmoid function
-        # activations = act_5dim
-        mins = neuralnet.np.min(act_5dim_sliding, 0)
-        maxs = neuralnet.np.max(act_5dim_sliding, 0)
-        #print("maxs-mins:")
+        #activations = act_5dim
+        mins = np.array(config.config["mins"], dtype="float64")
+        maxs = np.array(config.config["maxs"], dtype="float64")
+        mins_track = neuralnet.np.min(act_5dim_sliding, 0)
+        maxs_track = neuralnet.np.max(act_5dim_sliding, 0)
+        config_tracker["mins"] = mins_track
+        config_tracker["maxs"] = maxs_track
         activations = (act_5dim_sliding - mins) / (maxs - mins)
+        activation = activations[-1]
+        activation = clip_activation(activation)
 
-        #print(activations)
-        client.send_message("/sound", activations[0])
+        CLIENT.send_message("/sound", activation)
