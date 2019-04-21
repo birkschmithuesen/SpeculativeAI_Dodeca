@@ -8,8 +8,7 @@ from conversation import neuralnet, configuration, vision_camera
 
 SLIDING_WINDOW_SIZE = 50 # number of frames in sliding window
 
-TRANSFORM_FROM_CNN_DIM_TO_SOUND_DIM = True
-TRANSFORM_USING_PCA = True  # True: transform from 512 to 5 using PCA. Otherwise, using random matrix
+TRANSFORM_USING_PCA = True  # True: transform from 512 to 5 using PCA. Otherwise, use random matrix
 
 OSC_IP_ADDRESS = "localhost"
 OSC_PORT = 8005
@@ -56,50 +55,63 @@ def clip_activation(activation):
         print("\033[0m")
     return act_new_np
 
-while True:
+def process_key(key_input):
+    """
+    quit programm on 'q' and save current config on 's'
+    """
+    if key_input & 0xFF == ord('q'):
+        vision_camera.cv2.destroyAllWindows()
+        CAMERA.release()
+        exit(0)
+    elif key_input & 0xFF == ord('s'):
+        save_current_config()
 
+def reduce_to_5dim(activations):
+    """
+    reduce 512 dim vector to 5 dim vector
+    """
+    if TRANSFORM_USING_PCA:
+        pca = neuralnet.load('pca.joblib')
+        res_5dim = pca.transform(activations)
+        # if you want to add some gaussian noise to the 5dim vectors you can uncomment
+        # the following 2 lines
+        # MG = np.random.normal(0, scale=0.1, size=act_5dim.shape)
+        # act_5dim = act_5dim + MG
+    else:
+        M, MG = neuralnet.get_M_and_MG_from_file()
+        res_5dim = activations @ M  # matrix multiplication
+    return res_5dim
+
+while True:
     for frames in CAMERA:
         cv2_img, pil_img = frames
         if SHOW_FRAMES:
             vision_camera.cv2.imshow('frame', cv2_img)
             key = vision_camera.cv2.waitKey(20)
-            if key & 0xFF == ord('q'):
-                    vision_camera.cv2.destroyAllWindows()
-                    CAMERA.release()
-            elif key & 0xFF == ord('s'):
-                    save_current_config()
+            process_key(key)
         img_collection = [pil_img]
         names_of_file = ["test"]
-        break;
+        break
 
-    activations, header, img_coll_bn = neuralnet.get_activations(MODEL, img_collection, names_of_file)
+    activation_vectors, header, img_coll_bn = neuralnet.get_activations(\
+        MODEL, img_collection, names_of_file)
 
-    if TRANSFORM_FROM_CNN_DIM_TO_SOUND_DIM:
-        if TRANSFORM_USING_PCA:
-            pca = neuralnet.load('pca.joblib')
-            act_5dim = pca.transform(activations)
-            # if you want to add some gaussian noise to the 5dim vectors you can uncomment the following 2 lines
-            # MG = np.random.normal(0, scale=0.1, size=act_5dim.shape)
-            # act_5dim = act_5dim + MG
-        else:
-            M, MG = neuralnet.get_M_and_MG_from_file()
-            act_5dim = activations @ M  # matrix multiplication
+    act_5dim = reduce_to_5dim(activation_vectors)
 
-        #print(act_5dim)
-        act_5dim_sliding.append(act_5dim[0])
-        if len(act_5dim_sliding) > SLIDING_WINDOW_SIZE:
-            act_5dim_sliding.pop(0)
+    act_5dim_sliding.append(act_5dim[0])
+    if len(act_5dim_sliding) > SLIDING_WINDOW_SIZE:
+        act_5dim_sliding.pop(0)
 
-        #activations = neuralnet.sigmoid(act_5dim, coef=0.05)  # Sigmoid function
-        #activations = act_5dim
-        mins = np.array(config.config["mins"], dtype="float64")
-        maxs = np.array(config.config["maxs"], dtype="float64")
-        mins_track = neuralnet.np.min(act_5dim_sliding, 0)
-        maxs_track = neuralnet.np.max(act_5dim_sliding, 0)
-        config_tracker["mins"] = mins_track
-        config_tracker["maxs"] = maxs_track
-        activations = (act_5dim_sliding - mins) / (maxs - mins)
-        activation = activations[-1]
-        activation = clip_activation(activation)
+    #activations = neuralnet.sigmoid(act_5dim, coef=0.05)  # Sigmoid function
+    #activations = act_5dim
+    mins = np.array(config.config["mins"], dtype="float64")
+    maxs = np.array(config.config["maxs"], dtype="float64")
+    mins_track = neuralnet.np.min(act_5dim_sliding, 0)
+    maxs_track = neuralnet.np.max(act_5dim_sliding, 0)
+    config_tracker["mins"] = mins_track
+    config_tracker["maxs"] = maxs_track
+    activations_5dim = (act_5dim_sliding - mins) / (maxs - mins)
+    activation_vector = activations_5dim[-1]
+    activation_vector = clip_activation(activation_vector)
 
-        CLIENT.send_message("/sound", activation)
+    CLIENT.send_message("/sound", activation_vector)

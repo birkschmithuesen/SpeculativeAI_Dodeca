@@ -77,8 +77,7 @@ class Camera():
         :return: Tupel consisting of next opencv frame and python image library frame
         """
         ret, frame = self.video_capture.read()
-        orig_frame = frame
         frame = self.crop_frame(frame)
-        cv2_im = cv2.cvtColor(orig_frame, cv2.COLOR_BGR2RGB)
+        cv2_im = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         pil_im = Image.fromarray(cv2_im)
         return frame, pil_im
