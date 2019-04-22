@@ -85,8 +85,7 @@ def binarize_array(numpy_array, threshold=200):
                 numpy_array[i][j] = 0
     return numpy_array
 
-
-def get_activations(model, img_collection, file_names):
+def get_activations(model, img_collection, file_names, save_files=False):
     """
     This function computes one vector for each image using the CNN model and store them in 'activations'.
     Each column of 'activations' corresponds with the vector of one image.
@@ -112,7 +111,8 @@ def get_activations(model, img_collection, file_names):
         xbw = binarize_array(xbw)  # filtering
         img_bw = Image.fromarray(xbw)
         img_bw = img_bw.convert('RGB')  # convert image to RGB
-        img_bw.save(file_names[idx]+'.BW.jpg')
+        if save_files:
+            img_bw.save(file_names[idx]+'.BW.jpg')
         img_collection_bn.append(img_bw)
         if WORK_WITH_ORIGINAL_IMAGES:
             x = image.img_to_array(img)
@@ -122,9 +122,10 @@ def get_activations(model, img_collection, file_names):
         x = np.expand_dims(x, axis=0)
         activations.append(np.squeeze(model.predict(x)))
         header = header + os.path.basename(file_names[idx]).split('.')[0] + ';'
-    np.savetxt("out_vectors.csv", list(map(list, zip(*activations))), delimiter=";", header=header)
     distances = distance_matrix(activations, activations)
-    np.savetxt("out_distances.csv", distances, delimiter=";", header=header)
+    if save_files:
+        np.savetxt("out_vectors.csv", list(map(list, zip(*activations))), delimiter=";", header=header)
+        np.savetxt("out_distances.csv", distances, delimiter=";", header=header)
     return activations, header, img_collection_bn
 
 
@@ -223,7 +224,7 @@ def main():
 
     img_collection, names_of_file = load_img(in_dir)
 
-    activations, header, img_coll_bn = get_activations(model, img_collection, names_of_file)
+    activations, header, img_coll_bn = get_activations(model, img_collection, names_of_file, True)
 
     if TRANSFORM_FROM_CNN_DIM_TO_SOUND_DIM:
         if TRANSFORM_USING_PCA:
