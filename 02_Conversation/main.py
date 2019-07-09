@@ -21,6 +21,13 @@ CONFIG_PATH = "./conversation_config"
 
 SHOW_FRAMES = True #show window frames
 
+# these set tha random range for inserting a predictions
+# multiple times (inluding 0, if set to start at 0)
+# into the prediction buffer
+MESSAGE_RANDOMIZER_START = 0
+MESSAGE_RANDOMIZER_END = 3
+
+
 FPS = 2 # fps used for replaying the prediction buffer
 PAUSE_LENGTH = 5 # length in frames of darkness that triggers pause event
 PAUSE_BRIGHTNESS_THRESH = 70 # Threshhold defining pause if frame brightness is below the value
@@ -161,8 +168,6 @@ def prediction_postprocessing(activation_vectors):
 
 
 while True:
-    cv2_img = []
-
     img_collection, names_of_file, cv2_img = get_frame()
 
     if(is_pause(cv2_img)):
@@ -174,6 +179,6 @@ while True:
 
     activation_vector = prediction_postprocessing(activation_vectors)
 
-    random_value = random.randint(0,3)
+    random_value = random.randint(MESSAGE_RANDOMIZER_START, MESSAGE_RANDOMIZER_END)
     for i in range(random_value):
         prediction_buffer.append(activation_vector)
