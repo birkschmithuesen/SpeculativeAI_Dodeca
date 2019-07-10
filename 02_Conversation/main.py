@@ -15,8 +15,8 @@ SLIDING_WINDOW_SIZE = 50 # number of frames in sliding window
 
 TRANSFORM_USING_PCA = True  # True: transform from 512 to 5 using PCA. Otherwise, use random matrix
 
-OSC_IP_ADDRESS = "localhost"
-OSC_PORT = 8005
+OSC_IP_ADDRESS = "2.0.0.2"
+OSC_PORT = 57120
 CONFIG_PATH = "./conversation_config"
 
 SHOW_FRAMES = True #show window frames
@@ -25,13 +25,13 @@ SHOW_FRAMES = True #show window frames
 # multiple times (inluding 0, if set to start at 0)
 # into the prediction buffer
 MESSAGE_RANDOMIZER_START = 0
-MESSAGE_RANDOMIZER_END = 3
+MESSAGE_RANDOMIZER_END = 4
 
 
-FPS = 2 # fps used for replaying the prediction buffer
-PAUSE_LENGTH = 5 # length in frames of darkness that triggers pause event
-PAUSE_BRIGHTNESS_THRESH = 70 # Threshhold defining pause if frame brightness is below the value
-PREDICTION_BUFFER_MAXLEN = 441 # 10 seconds * 44.1 fps
+FPS = 20 # fps used for replaying the prediction buffer
+PAUSE_LENGTH = 20 # length in frames of darkness that triggers pause event
+PAUSE_BRIGHTNESS_THRESH = 10 # Threshhold defining pause if frame brightness is below the value
+PREDICTION_BUFFER_MAXLEN = 200 # 10 seconds * 44.1 fps
 
 CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
 
@@ -70,9 +70,9 @@ def clip_activation(activation):
     act_new_np = np.array(act_new, dtype="float64")
     activation_diff = activation - act_new_np
     if np.count_nonzero(activation_diff) > 0:
-        print("\033[93mClipped activations. Diff:")
+        print("Clipped activations. Diff:")
         print(activation_diff)
-        print("\033[0m")
+        print("")
     return act_new_np
 
 def process_key(key_input):
@@ -111,7 +111,10 @@ def is_pause(frame):
     cv2.cvtColor(frame, cv2.COLOR_RGB2HSV, image)
     brightness = np.mean(image[:,:,2])
     print("Brightness: {}".format(brightness))
+    print("")
     if brightness < PAUSE_BRIGHTNESS_THRESH:
+        print("Pause Counter: ", pause_counter)
+        print("")
         if pause_counter >= PAUSE_LENGTH:
             pause_counter = 0
             return True
@@ -126,6 +129,7 @@ def play_buffer():
     configured FPS until it's empty
     """
     while len(prediction_buffer) > 0:
+        print("Playing Buffer ")
         CLIENT.send_message("/sound", prediction_buffer.popleft())
         time.sleep(1/FPS) #ensure playback speed matches framerate
 
