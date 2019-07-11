@@ -28,9 +28,9 @@ MESSAGE_RANDOMIZER_START = 0
 MESSAGE_RANDOMIZER_END = 4
 
 
-FPS = 20 # fps used for replaying the prediction buffer
-PAUSE_LENGTH = 20 # length in frames of darkness that triggers pause event
-PAUSE_BRIGHTNESS_THRESH = 10 # Threshhold defining pause if frame brightness is below the value
+FPS = 15 # fps used for replaying the prediction buffer
+PAUSE_LENGTH = 25 # length in frames of darkness that triggers pause event
+PAUSE_BRIGHTNESS_THRESH = 84 # Threshhold defining pause if frame brightness is below the value
 PREDICTION_BUFFER_MAXLEN = 200 # 10 seconds * 44.1 fps
 
 CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)

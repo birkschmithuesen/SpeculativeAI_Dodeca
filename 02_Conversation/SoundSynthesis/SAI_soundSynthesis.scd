@@ -8,7 +8,7 @@ OSCdef("pitch",
 		//~padSynth.set(\ctrl1,msg[1..]);
 		a.set(\t_env, 1, \bus, b);//call this everytime an osc msg comes in
 		b.set(msg[1])
-	}, "/pitch"
+	}, "/sound"
 );
 
 
@@ -17,9 +17,10 @@ EnvGen
 (a = {
 	arg t_env, bus;
 	var env;
-	env = Env.new([1,1,0], [0.2,0.2]).ar(0, t_env); //[0.5 -> hold time (max dur between osc msgs), 1 -> release time]
+	env = Env.new([1,1,0], [0.5,1.3
+	]).ar(0, t_env); //[0.5 -> hold time (max dur between osc msgs), 1 -> release time]
 	env.scope;
-	env = SinOsc.ar(30*(In.kr(bus).lag(0.5)*120).midiratio) * env;
+	env = SinOsc.ar(60*(In.kr(bus).lag(0.5)*50).midiratio) * env;
 	Splay.ar(env);
 }.play;
 )
