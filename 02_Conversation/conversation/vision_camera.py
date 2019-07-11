@@ -22,7 +22,7 @@ class Camera():
         """
         self.frame_width = frame_width
         self.frame_height = frame_height
-        self.video_capture = cv2.VideoCapture(0 + cv2.CAP_DSHOW)
+        self.video_capture = cv2.VideoCapture(0)
         if not self.video_capture.isOpened():
             raise Exception("Could not open video device")
         # Set properties. Each returns === True on success (i.e. correct resolution)
