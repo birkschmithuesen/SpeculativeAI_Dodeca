@@ -28,9 +28,9 @@ MESSAGE_RANDOMIZER_START = 0
 MESSAGE_RANDOMIZER_END = 4
 
 
-FPS = 15 # fps used for replaying the prediction buffer
-PAUSE_LENGTH = 25 # length in frames of darkness that triggers pause event
-PAUSE_BRIGHTNESS_THRESH = 84 # Threshhold defining pause if frame brightness is below the value
+FPS = 20 # fps used for replaying the prediction buffer
+PAUSE_LENGTH = 35 # length in frames of darkness that triggers pause event
+PAUSE_BRIGHTNESS_THRESH = 15 # Threshhold defining pause if frame brightness is below the value
 PREDICTION_BUFFER_MAXLEN = 200 # 10 seconds * 44.1 fps
 
 CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
@@ -45,6 +45,7 @@ config_tracker = {}
 config = configuration.ConversationConfig(CONFIG_PATH)
 print(config.config)
 
+was_talking = True #stores the last action True -> Talking; False -> Listening
 prediction_buffer = deque(maxlen=PREDICTION_BUFFER_MAXLEN)
 pause_counter = 0
 
@@ -106,7 +107,7 @@ def is_pause(frame):
     """
     return True if a pause in the image stream was detected else return False
     """
-    global pause_counter
+    global pause_counter, was_talking
     image = np.zeros((224,224,3), np.uint8)
     cv2.cvtColor(frame, cv2.COLOR_RGB2HSV, image)
     brightness = np.mean(image[:,:,2])
@@ -114,12 +115,17 @@ def is_pause(frame):
     print("")
     if brightness < PAUSE_BRIGHTNESS_THRESH:
         print("Pause Counter: ", pause_counter)
+        print("Was Talking:", was_talking)
         print("")
-        if pause_counter >= PAUSE_LENGTH:
+        if was_talking: the_pause_length = 2 * PAUSE_LENGTH
+        else: the_pause_length = PAUSE_LENGTH
+        if pause_counter >= the_pause_length:
             pause_counter = 0
             return True
         pause_counter += 1
     else:
+        print("LISTENING!")
+        was_talking = False
         pause_counter = 0
     return False
 
@@ -175,6 +181,8 @@ while True:
     img_collection, names_of_file, cv2_img = get_frame()
 
     if(is_pause(cv2_img)):
+        was_talking = True
+        print("was talking", was_talking)
         play_buffer()
         continue
 
