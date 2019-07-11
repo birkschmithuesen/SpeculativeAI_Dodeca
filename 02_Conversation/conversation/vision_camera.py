@@ -22,7 +22,7 @@ class Camera():
         """
         self.frame_width = frame_width
         self.frame_height = frame_height
-        self.video_capture = cv2.VideoCapture(0)
+        self.video_capture = cv2.VideoCapture(0 + cv2.CAP_DSHOW)
         if not self.video_capture.isOpened():
             raise Exception("Could not open video device")
         # Set properties. Each returns === True on success (i.e. correct resolution)
@@ -31,6 +31,7 @@ class Camera():
         self.actual_frame_width = self.video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)
         self.actual_frame_height = self.video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
         self.video_capture.set(cv2.CAP_PROP_FPS, fps)
+        self.video_capture.set(cv2.CAP_PROP_SETTINGS,0)
         print("Initializing camera")
         print("actual_frame_width:" + str(self.actual_frame_width))
         print("actual_frame_height:" + str(self.actual_frame_height))
