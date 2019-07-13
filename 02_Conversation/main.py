@@ -192,13 +192,10 @@ while True:
     img_collection, names_of_file, cv2_img = get_frame()
 
     if(is_pause(cv2_img)):
-<<<<<<< HEAD
         was_talking = True
         print("was talking", was_talking)
-=======
         remove_pause_frames()
         prediction_buffer_frame_id = 0
->>>>>>> 36f8d5f81fc55584b3b7dbb7e048e26ca038e714
         play_buffer()
         continue
 
