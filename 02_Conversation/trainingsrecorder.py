@@ -1,3 +1,12 @@
+"""
+This program listens on OSC_IP_ADDRESS:OSC_PORT for incoming
+sound vectors (array of floats) via OSC protocol address '/record_sound_vector'
+and saves it to a buffer. After hitting ctrl-C in the terminal or receiving
+any data on address '/stop' the recording process stops and the sound vectors
+will be saved along neural net prediction output vectors based camera frames
+that were saved during recording.
+"""
+
 import os
 import threading
 import signal
@@ -16,6 +25,8 @@ CAMERA = Camera(224, 224)
 
 trainingsset = []
 trainingsset_final = []
+
+stop_event = threading.Event()
 
 def get_frame():
     """
@@ -72,22 +83,41 @@ def record(address, *args):
     img_collection, names_of_file, cv2_img = get_frame()
     trainingsset.append([soundvector, img_collection, names_of_file, cv2_img])
 
+def osc_stop(address, *args):
+    """
+    Callback osc dispatcher to stop recording
+    """
+    stop_recording()
+
 def signal_handler(signal, frame):
+    """
+    Callback for signal to stop recording
+    """
     print('You pressed Ctrl+C!')
-    server.shutdown()
-    server.server_close()
-    process_trainingsset()
-    save_to_disk()
-    sys.exit(0)
+    stop_recording()
+
+def stop_recording():
+    """
+    Stops the recording and processes the already recorded frames
+    and saves the result to disk
+    """
+    def stop():
+        server.shutdown()
+        server.server_close()
+        stop_event.set()
+    threading.Thread(target=stop, daemon=True).start()
 
 if __name__ == "__main__":
     dispatcher = dispatcher.Dispatcher()
     dispatcher.map("/record_sound_vector", record)
+    dispatcher.map("/stop", osc_stop)
     server = osc_server.ThreadingOSCUDPServer(
         (OSC_IP_ADDRESS, OSC_PORT), dispatcher)
     print("Serving on {}".format(server.server_address))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     signal.signal(signal.SIGINT, signal_handler)
-    print('Press Ctrl+C to save current data to disk')
-    forever = threading.Event()
-    forever.wait()
+    print('Press Ctrl+C to save current data to disk.')
+    stop_event.wait()
+    process_trainingsset()
+    save_to_disk()
+    sys.exit(0)

@@ -48,6 +48,7 @@ print(config.config)
 was_talking = True #stores the last action True -> Talking; False -> Listening
 prediction_buffer = deque(maxlen=PREDICTION_BUFFER_MAXLEN)
 pause_counter = 0
+prediction_buffer_frame_id = 0
 
 def save_current_config():
     """
@@ -129,6 +130,16 @@ def is_pause(frame):
         pause_counter = 0
     return False
 
+def remove_pause_frames():
+    """
+    Remove all pause frames from the right end of the prediction
+    buffer
+    """
+    last_frame_id = prediction_buffer_frame_id - (PAUSE_LENGTH - 1)
+    while(prediction_buffer[-1][1] > last_frame_id):
+        prediction_buffer.pop()
+
+
 def play_buffer():
     """
     Send out all sound predictions in the buffer with the
@@ -136,7 +147,7 @@ def play_buffer():
     """
     while len(prediction_buffer) > 0:
         print("Playing Buffer ")
-        CLIENT.send_message("/sound", prediction_buffer.popleft())
+        CLIENT.send_message("/sound", prediction_buffer.popleft()[0])
         time.sleep(1/FPS) #ensure playback speed matches framerate
 
 def get_frame():
@@ -181,8 +192,13 @@ while True:
     img_collection, names_of_file, cv2_img = get_frame()
 
     if(is_pause(cv2_img)):
+<<<<<<< HEAD
         was_talking = True
         print("was talking", was_talking)
+=======
+        remove_pause_frames()
+        prediction_buffer_frame_id = 0
+>>>>>>> 36f8d5f81fc55584b3b7dbb7e048e26ca038e714
         play_buffer()
         continue
 
@@ -191,6 +207,7 @@ while True:
 
     activation_vector = prediction_postprocessing(activation_vectors)
 
+    prediction_buffer_frame_id += 1
     random_value = random.randint(MESSAGE_RANDOMIZER_START, MESSAGE_RANDOMIZER_END)
     for i in range(random_value):
-        prediction_buffer.append(activation_vector)
+        prediction_buffer.append((activation_vector, prediction_buffer_frame_id))
