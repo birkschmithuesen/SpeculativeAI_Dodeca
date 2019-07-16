@@ -20,7 +20,7 @@ SAVE_MODEL = True
 
 MODEL_FILE_PATH = './data/dictionary_model.h5'
 MODEL_TRAININGS_DATA_FILE_PATH = './data/trainingsset_dodeca.csv'
-MODEL_SAVE_FILE_PATH = '../data/dictionary_model.h5'
+MODEL_SAVE_FILE_PATH = './data/dictionary_model.h5'
 
 INPUT_DIM = 512
 BATCH_SIZE = 32
@@ -54,7 +54,6 @@ def train_model():
     file = open(file_name)
     print('Loading Trainingsdata from File:', file_name,'  ...')
     values = np.loadtxt(file_name, dtype='float32')
-    values = values[:,:-6]
     print('Trainingsdata points: ', values.shape[0], "\n")
     print('Trainingsdata shape: ', values.shape, "\n")
 
