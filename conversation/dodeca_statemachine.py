@@ -24,8 +24,8 @@ SHOW_FRAMES = True #show window frames
 # these set tha random range for inserting a predictions
 # multiple times (inluding 0, if set to start at 0)
 # into the prediction buffer
-MESSAGE_RANDOMIZER_START = 0
-MESSAGE_RANDOMIZER_END = 4
+MESSAGE_RANDOMIZER_START = 1
+MESSAGE_RANDOMIZER_END = 1
 
 REPLAY_FPS_FACTOR = 1 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
 PAUSE_LENGTH = 35 # length in frames of darkness that triggers pause event
