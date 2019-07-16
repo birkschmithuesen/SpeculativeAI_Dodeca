@@ -6,13 +6,13 @@ import numpy as np
 import cv2
 from pythonosc import udp_client
 from conversation.vision_camera import Camera
-from conversation import neuralnet_vision, configuration, vision_camera
+from conversation import neuralnet_vision, neuralnet_dictionary, configuration, vision_camera
 
 LIVE_REPLAY = False # replay the predictions live without buffer
 
 SLIDING_WINDOW_SIZE = 50 # number of frames in sliding window
 
-TRANSFORM_USING_PCA = True  # True: transform from 512 to 5 using PCA. Otherwise, use random matrix
+TRANSFORM_USING_NEURAL_NET = True # True: transform from 512 to 5 using PCA. Otherwise, use neural net
 
 OSC_IP_ADDRESS = "2.0.0.2"
 OSC_PORT = 57120
@@ -28,7 +28,7 @@ MESSAGE_RANDOMIZER_START = 0
 MESSAGE_RANDOMIZER_END = 4
 
 FPS = 15 # fps used for replaying the prediction buffer
-PAUSE_LENGTH = 4 # length in frames of darkness that triggers pause event
+PAUSE_LENGTH = 35 # length in frames of darkness that triggers pause event
 PAUSE_BRIGHTNESS_THRESH = 84 # Threshhold defining pause if frame brightness is below the value
 PREDICTION_BUFFER_MAXLEN = 200 # 10 seconds * 44.1 fps
 
@@ -40,6 +40,9 @@ MODEL = neuralnet_vision.build_model()
 MODEL.summary()
 act_5dim_sliding = []
 config_tracker = {}
+
+if TRANSFORM_USING_NEURAL_NET:
+    neuralnet_dictionary.run()
 
 config = configuration.ConversationConfig(CONFIG_PATH)
 print(config.config)
@@ -90,16 +93,18 @@ def reduce_to_5dim(activations):
     """
     reduce 512 dim vector to 5 dim vector
     """
-    if TRANSFORM_USING_PCA:
+    if TRANSFORM_USING_NEURAL_NET:
+        prediction_input = [activations]
+        prediction_input = np.asarray(prediction_input)
+        prediction_input.shape = (1, neuralnet_dictionary.INPUT_DIM)
+        res_5dim = neuralnet_dictionary.model.predict(prediction_input)
+    else:
         pca = neuralnet_vision.load(PCA_PATH)
         res_5dim = pca.transform(activations)
         # if you want to add some gaussian noise to the 5dim vectors you can uncomment
         # the following 2 lines
         # MG = np.random.normal(0, scale=0.1, size=act_5dim.shape)
         # act_5dim = act_5dim + MG
-    else:
-        M, MG = neuralnet_vision.get_M_and_MG_from_file()
-        res_5dim = activations @ M  # matrix multiplication
     return res_5dim
 
 def contains_darkness(image_frame):

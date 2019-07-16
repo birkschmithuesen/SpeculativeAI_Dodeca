@@ -19,6 +19,8 @@ from conversation import neuralnet, configuration, vision_camera
 OSC_IP_ADDRESS = "localhost"
 OSC_PORT = 8005
 
+TRAININGS_SET_PATH = "./data/trainingsset_dodeca.csv"
+
 SHOW_FRAMES = True #show window frames
 
 CAMERA = Camera(224, 224)
@@ -63,11 +65,11 @@ def save_to_disk():
     """
     saves the trainings set from trainingsset_final to disk
     """
-    with open("trainingsset_dodeca.csv", mode="w") as csv_file:
+    with open(TRAININGS_SET_PATH, mode="w") as csv_file:
         fieldnames = ["image vector" + str (i) for i in range(512)]
         fieldnames.extend(["sound vector" + str (i) for i in range(5)])
-        writer = csv.writer(csv_file)
-        writer.writerow(fieldnames)
+        writer = csv.writer(csv_file, delimiter=" ")
+        #writer.writerow(fieldnames)
         for image_vector, sound_vector in trainingsset_final:
             row = list(image_vector[0])
             row.extend(sound_vector)
