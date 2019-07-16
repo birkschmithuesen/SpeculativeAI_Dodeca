@@ -25,10 +25,10 @@ CNN_DIM = 512
 SOUND_DIM = 5
 
 OUT_DIM = 6  # number of images in a row/column in output image
-IN_DIR = '../data/camera_view/video_frames/'  # source directory for images
-OUT_DIR = '../'  # destination directory for output image
+IN_DIR = './data/camera_view/video_frames/'  # source directory for images
+OUT_DIR = './data/'  # destination directory for output image
 
-PCA_PATH = '../data/pca.joblib'
+PCA_PATH = './data/pca.joblib'
 
 
 to_plot = np.square(OUT_DIM)
