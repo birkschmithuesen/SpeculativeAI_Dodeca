@@ -14,12 +14,12 @@ from keras.models import load_model
 from keras import backend as kerasBackend
 import numpy as np
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1' #force Tensorflow to use the computed
-LOAD_MODEL = True
-SAVE_MODEL = False
+#os.environ['CUDA_VISIBLE_DEVICES'] = '-1' #force Tensorflow to use the computed
+LOAD_MODEL = False
+SAVE_MODEL = True
 
 MODEL_FILE_PATH = './data/dictionary_model.h5'
-MODEL_TRAININGS_DATA_FILE_PATH = '../data/trainingsset_dodeca.csv'
+MODEL_TRAININGS_DATA_FILE_PATH = './data/trainingsset_dodeca.csv'
 MODEL_SAVE_FILE_PATH = '../data/dictionary_model.h5'
 
 INPUT_DIM = 512
