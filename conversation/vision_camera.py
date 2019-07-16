@@ -26,7 +26,10 @@ class Camera():
         if platform.system() != "Darwin":
             # Use on board camera on MacOS
             id += cv2.CAP_DSHOW
-        self.video_capture = cv2.VideoCapture(id)
+        if any(platform.win32_ver()):
+            self.video_capture = cv2.VideoCapture(0 + cv2.CAP_DSHOW)
+        else:
+            self.video_capture = cv2.VideoCapture(id + cv2)
         if not self.video_capture.isOpened():
             raise Exception("Could not open video device")
         # Set properties. Each returns === True on success (i.e. correct resolution)
