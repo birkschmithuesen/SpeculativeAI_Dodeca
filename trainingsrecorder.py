@@ -125,9 +125,9 @@ def start_recording():
 
 if __name__ == "__main__":
     start_recording()
-    if any(platform.win32_ver()):
-        signal.signal(signal.CTRL_C_EVENT, signal_handler)
-    else:
+    #if any(platform.win32_ver()):
+        #signal.signal(signal.CTRL_C_EVENT, signal_handler)
+    if not any(platform.win32_ver()):
         signal.signal(signal.SIGINT, signal_handler)
     print('Press Ctrl+C to save current data to disk.')
     stop_event.wait()
