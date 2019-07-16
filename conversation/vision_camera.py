@@ -2,7 +2,7 @@
 This module contains objects needed to capture camera frames, send osc output and further
 functionality needed for https://github.com/birkschmithuesen/SpeculativeArtificialIntelligence .
 """
-
+import platform
 import cv2
 from PIL import Image
 
@@ -22,7 +22,11 @@ class Camera():
         """
         self.frame_width = frame_width
         self.frame_height = frame_height
-        self.video_capture = cv2.VideoCapture(0)
+        id = 0
+        if platform.system() != "Darwin":
+            # Use on board camera on MacOS
+            id += cv2.CAP_DSHOW
+        self.video_capture = cv2.VideoCapture(id)
         if not self.video_capture.isOpened():
             raise Exception("Could not open video device")
         # Set properties. Each returns === True on success (i.e. correct resolution)
