@@ -37,4 +37,7 @@ class TestTrainingsrecorder(object):
         trainingsrecorder.save_to_disk()
         assert os.path.exists(PYTEST_CSV_PATH)
         assert file_len(PYTEST_CSV_PATH) == 3
+        with open(PYTEST_CSV_PATH) as f:
+            for line in f:
+                assert line[-10:] == "1 1 1 1 1\n"
         os.remove(PYTEST_CSV_PATH)
