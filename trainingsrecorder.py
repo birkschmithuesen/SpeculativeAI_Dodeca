@@ -14,9 +14,9 @@ import sys
 import csv
 from pythonosc import osc_server, dispatcher
 from conversation.vision_camera import Camera
-from conversation import neuralnet, configuration, vision_camera
+from conversation import neuralnet_dictionary, configuration, vision_camera
 
-OSC_IP_ADDRESS = "localhost"
+OSC_IP_ADDRESS = "0.0.0.0"
 OSC_PORT = 8005
 
 TRAININGS_SET_PATH = "./data/trainingsset_dodeca.csv"
@@ -46,7 +46,7 @@ def process_trainingsset():
     512 dim vector based on the neural net and saves them together
     with the sound vector to the trainingsset_final list
     """
-    MODEL = neuralnet.build_model()
+    MODEL = neuralnet_dictionary.build_model()
     MODEL.summary()
     for set in trainingsset:
         soundvector = set [0]
@@ -120,6 +120,6 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     print('Press Ctrl+C to save current data to disk.')
     stop_event.wait()
-    process_trainingsset()
+    #process_trainingsset()
     save_to_disk()
     sys.exit(0)
