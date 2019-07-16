@@ -23,11 +23,8 @@ class Camera():
         self.frame_width = frame_width
         self.frame_height = frame_height
         id = 0
-        if platform.system() != "Darwin":
-            # Use on board camera on MacOS
-            id += cv2.CAP_DSHOW
         if any(platform.win32_ver()):
-            self.video_capture = cv2.VideoCapture(0 + cv2.CAP_DSHOW)
+            self.video_capture = cv2.VideoCapture(id + cv2.CAP_DSHOW)
         else:
             self.video_capture = cv2.VideoCapture(id + cv2)
         if not self.video_capture.isOpened():
