@@ -8,14 +8,14 @@ class TestCamera(object):
         assert cam
         assert cam.video_capture.get(cv2.CAP_PROP_FRAME_WIDTH) == 320
         assert cam.video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT) == 240
-        assert cam.video_capture.get(cv2.CAP_PROP_FPS) == 30
+        assert int(cam.video_capture.get(cv2.CAP_PROP_FPS)) == 30
         cam.release()
 
         cam = Camera(240, 480, 30)
         assert cam
         assert cam.video_capture.get(cv2.CAP_PROP_FRAME_WIDTH) == 640
         assert cam.video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT) == 480
-        assert cam.video_capture.get(cv2.CAP_PROP_FPS) == 30
+        assert int(cam.video_capture.get(cv2.CAP_PROP_FPS)) == 30
         cam.release()
 
     def test_cropping(self):

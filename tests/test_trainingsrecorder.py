@@ -19,11 +19,11 @@ class TestTrainingsrecorder(object):
         trainingsrecorder.start_recording()
         time.sleep(0.5)
         assert len(trainingsrecorder.trainingsset) == 0
-        CLIENT.send_message("/record_sound_vector", [1,1,1,1,1])
+        CLIENT.send_message("/record_sound_vector", [1.0,1.0,1.0,1.0,1.0])
         time.sleep(0.5)
         assert len(trainingsrecorder.trainingsset) == 1
         for i in range(2):
-            CLIENT.send_message("/record_sound_vector", [1,1,1,1,1])
+            CLIENT.send_message("/record_sound_vector", [1.0,1.0,1.0,1.0,1.0])
             time.sleep(0.05)
         assert len(trainingsrecorder.trainingsset) == 3
     def test_file_saving(self):
@@ -39,5 +39,5 @@ class TestTrainingsrecorder(object):
         assert file_len(PYTEST_CSV_PATH) == 3
         with open(PYTEST_CSV_PATH) as f:
             for line in f:
-                assert line[-10:] == "1 1 1 1 1\n"
+                assert line[-20:] == "1.0 1.0 1.0 1.0 1.0\n"
         os.remove(PYTEST_CSV_PATH)
