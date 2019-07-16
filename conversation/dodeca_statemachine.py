@@ -8,7 +8,7 @@ from pythonosc import udp_client
 from conversation.vision_camera import Camera
 from conversation import neuralnet_vision, neuralnet_dictionary, configuration, vision_camera
 
-LIVE_REPLAY = False # replay the predictions live without buffer
+LIVE_REPLAY = True # replay the predictions live without buffer
 
 SLIDING_WINDOW_SIZE = 50 # number of frames in sliding window
 
@@ -24,8 +24,8 @@ SHOW_FRAMES = True #show window frames
 # these set tha random range for inserting a predictions
 # multiple times (inluding 0, if set to start at 0)
 # into the prediction buffer
-MESSAGE_RANDOMIZER_START = 0
-MESSAGE_RANDOMIZER_END = 4
+MESSAGE_RANDOMIZER_START = 1
+MESSAGE_RANDOMIZER_END = 1
 
 FPS = 15 # fps used for replaying the prediction buffer
 PAUSE_LENGTH = 35 # length in frames of darkness that triggers pause event
