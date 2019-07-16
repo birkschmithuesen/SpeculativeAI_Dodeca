@@ -263,9 +263,10 @@ class Recording(State):
             MODEL, img_collection, names_of_file)
         activation_vector = prediction_postprocessing(activation_vectors)
         prediction_counter += 1
-        random_value = random.randint(MESSAGE_RANDOMIZER_START, MESSAGE_RANDOMIZER_END)
         if LIVE_REPLAY:
             random_value = 1
+        else:
+            random_value = random.randint(MESSAGE_RANDOMIZER_START, MESSAGE_RANDOMIZER_END)
         for i in range(random_value):
             prediction_buffer.append((activation_vector, prediction_counter))
         fpscounter.record_end_new_frame()
@@ -316,6 +317,7 @@ DodecaStateMachine.replaying = Replaying()
 
 if LIVE_REPLAY:
     def new_next_recording(image_frame):
+        prediction_counter = 0
         return DodecaStateMachine.replaying
     def new_next_replaying(image_frame):
         return DodecaStateMachine.recording
