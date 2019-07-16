@@ -66,6 +66,9 @@ def save_to_disk():
     """
     saves the trainings set from trainingsset_final to disk
     """
+    if len(trainingsset_final) == 0:
+        print("No trainings data received. Nothing written to disk.\n")
+        continue
     with open(TRAININGS_SET_PATH, mode="w") as csv_file:
         fieldnames = ["image vector" + str (i) for i in range(512)]
         fieldnames.extend(["sound vector" + str (i) for i in range(5)])

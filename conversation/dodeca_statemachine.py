@@ -8,7 +8,7 @@ from pythonosc import udp_client
 from conversation.vision_camera import Camera
 from conversation import neuralnet_vision, neuralnet_dictionary, configuration, vision_camera
 
-LIVE_REPLAY = False # replay the predictions live without buffer
+LIVE_REPLAY = True # replay the predictions live without buffer
 
 SLIDING_WINDOW_SIZE = 50 # number of frames in sliding window
 
@@ -27,7 +27,7 @@ SHOW_FRAMES = True #show window frames
 MESSAGE_RANDOMIZER_START = 0
 MESSAGE_RANDOMIZER_END = 4
 
-FPS = 15 # fps used for replaying the prediction buffer
+REPLAY_FPS_FACTOR = 1 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
 PAUSE_LENGTH = 35 # length in frames of darkness that triggers pause event
 PAUSE_BRIGHTNESS_THRESH = 84 # Threshhold defining pause if frame brightness is below the value
 PREDICTION_BUFFER_MAXLEN = 200 # 10 seconds * 44.1 fps
@@ -38,18 +38,34 @@ CAMERA = Camera(224, 224)
 #camera.show_capture()
 MODEL = neuralnet_vision.build_model()
 MODEL.summary()
-act_5dim_sliding = []
-config_tracker = {}
 
-if TRANSFORM_USING_NEURAL_NET:
-    neuralnet_dictionary.run()
+class FPSCounter():
+    """
+    This class tracks average fps
+    """
+    def __init__(self):
+        self.fps_sum = 0.0
+        self.counter = 0.0
+        self.last_timestamp = False
 
-config = configuration.ConversationConfig(CONFIG_PATH)
-print(config.config)
+    def record_end_new_frame(self):
+        time_now = time.time()
+        if self.last_timestamp:
+            time_delta = time_now - self.last_timestamp
+            self.fps_sum += 1.0/time_delta
+            self.counter += 1
+        self.last_timestamp = time_now
 
-prediction_buffer = deque(maxlen=PREDICTION_BUFFER_MAXLEN)
-pause_counter = 0
-prediction_counter = 0
+    def record_start_new_frame(self):
+        self.last_timestamp = time.time()
+
+    def get_average_fps(self):
+        if self.counter == 0:
+            return 0
+        average = self.fps_sum/self.counter
+        self.fps_sum = 0
+        self.counter = 0
+        return average
 
 def save_current_config():
     """
@@ -92,12 +108,14 @@ def process_key(key_input):
 def reduce_to_5dim(activations):
     """
     reduce 512 dim vector to 5 dim vector
+    Return 5 dim vector for neural net and
+    for pca the same inside a list object
     """
     if TRANSFORM_USING_NEURAL_NET:
         prediction_input = [activations]
         prediction_input = np.asarray(prediction_input)
         prediction_input.shape = (1, neuralnet_dictionary.INPUT_DIM)
-        res_5dim = neuralnet_dictionary.model.predict(prediction_input)
+        res_5dim = neuralnet_dictionary.model.predict(prediction_input)[0]
     else:
         pca = neuralnet_vision.load(PCA_PATH)
         res_5dim = pca.transform(activations)
@@ -149,12 +167,17 @@ def prediction_buffer_remove_pause():
 def play_buffer():
     """
     Send out all sound predictions in the buffer with the
-    configured FPS until it's empty
+    configured REPLAY_FPS_FACTOR until it's empty
     """
+    real_fps = fpscounter.get_average_fps()
+    replay_fps = real_fps * REPLAY_FPS_FACTOR
+    print("Playing Buffer with {} FPS\n".format(replay_fps))
     while len(prediction_buffer) > 0:
-        print("Playing Buffer\n")
-        CLIENT.send_message("/sound", prediction_buffer.popleft()[0])
-        time.sleep(1/FPS) #ensure playback speed matches framerate
+        prediction = prediction_buffer.popleft()[0]
+        print(prediction)
+        CLIENT.send_message("/sound", prediction)
+        if replay_fps > 0:
+            time.sleep(1/replay_fps) #ensure playback speed matches framerate
 
 def get_frame():
     """
@@ -176,6 +199,9 @@ def prediction_postprocessing(activation_vectors):
     resulting vector
     """
     act_5dim = reduce_to_5dim(activation_vectors)
+
+    if TRANSFORM_USING_NEURAL_NET:
+        return np.array(act_5dim, dtype="float64")
 
     act_5dim_sliding.append(act_5dim[0])
     if len(act_5dim_sliding) > SLIDING_WINDOW_SIZE:
@@ -231,14 +257,18 @@ class Recording(State):
     """
     def run(self, image_frames):
         global prediction_counter
+        fpscounter.record_start_new_frame()
         img_collection, names_of_file = image_frames
         activation_vectors, header, img_coll_bn = neuralnet_vision.get_activations(\
             MODEL, img_collection, names_of_file)
         activation_vector = prediction_postprocessing(activation_vectors)
         prediction_counter += 1
         random_value = random.randint(MESSAGE_RANDOMIZER_START, MESSAGE_RANDOMIZER_END)
+        if LIVE_REPLAY:
+            random_value = 1
         for i in range(random_value):
             prediction_buffer.append((activation_vector, prediction_counter))
+        fpscounter.record_end_new_frame()
 
     def next(self, image_frame):
         global prediction_counter
@@ -265,6 +295,20 @@ class Replaying(State):
 class DodecaStateMachine(StateMachine):
     def __init__(self):
         StateMachine.__init__(self, DodecaStateMachine.waiting)
+
+act_5dim_sliding = []
+config_tracker = {}
+
+if TRANSFORM_USING_NEURAL_NET:
+    neuralnet_dictionary.run()
+
+config = configuration.ConversationConfig(CONFIG_PATH)
+print(config.config)
+
+prediction_buffer = deque(maxlen=PREDICTION_BUFFER_MAXLEN)
+pause_counter = 0
+prediction_counter = 0
+fpscounter = FPSCounter()
 
 DodecaStateMachine.waiting = Waiting()
 DodecaStateMachine.recording = Recording()

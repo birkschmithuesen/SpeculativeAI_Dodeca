@@ -26,6 +26,7 @@ class TestTrainingsrecorder(object):
             CLIENT.send_message("/record_sound_vector", [1.0,1.0,1.0,1.0,1.0])
             time.sleep(0.05)
         assert len(trainingsrecorder.trainingsset) == 3
+
     def test_file_saving(self):
         trainingsrecorder.TRAININGS_SET_PATH = PYTEST_CSV_PATH
         if os.path.exists(PYTEST_CSV_PATH):
