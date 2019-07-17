@@ -12,8 +12,11 @@ var mixer_synth2_vol = Bus.control(s);
 var bus_synth1 = Bus.audio(s);
 var bus_synth2 = Bus.audio(s);
 
-var global_lag = 1;
-var global_decay = 1;
+var global_lag = 3;
+var global_decay = 2;
+
+var oscOutForTraining = NetAddr.new("2.0.0.1", 8005);
+var trainingsData = [0.0, 0.0, 0.0, 0.0, 0.0];
 
 ///////////////////////////////////////////////////////////
 //   OSC
@@ -24,6 +27,9 @@ OSCdef("synth1/pitch",
 		//msg.postln;
 		a.set(\t_env, 1); //call this everytime an osc msg comes in
 		synth1_pitch.set(msg[1]);
+		trainingsData[0] = msg[1];
+		oscOutForTraining.sendMsg("/record_sound_vector", trainingsData[0], trainingsData[1], trainingsData[2], trainingsData[3], trainingsData[4]);
+		trainingsData.postln;
 	}, "synth1/pitch"
 );
 
@@ -33,6 +39,7 @@ OSCdef("synth1/vol",
 		//msg.postln;
 		a.set(\t_env, 1); //call this everytime an osc msg comes in
 		synth1_vol.set(msg[1]);
+		trainingsData[1] = msg[1];
 	}, "synth1/vol"
 );
 
@@ -42,6 +49,7 @@ OSCdef("synth1/color",
 		//msg.postln;
 		a.set(\t_env, 1); //call this everytime an osc msg comes in
 		synth1_color.set(msg[1]);
+		trainingsData[2] = msg[1];
 	}, "synth1/color"
 );
 
@@ -51,6 +59,7 @@ OSCdef("synth2/vol",
 		//msg.postln;
 		a.set(\t_env, 1); //call this everytime an osc msg comes in
 		synth2_vol.set(msg[1]);
+		trainingsData[3] = msg[1];
 	}, "synth2/vol"
 );
 
@@ -60,6 +69,7 @@ OSCdef("synth2/pitch",
 		//msg.postln;
 		a.set(\t_env, 1); //call this everytime an osc msg comes in
 		synth2_pitch.set(msg[1]);
+		trainingsData[4] = msg[1];
 	}, "synth2/pitch"
 );
 
