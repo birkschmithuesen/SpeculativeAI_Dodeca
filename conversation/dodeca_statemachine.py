@@ -8,7 +8,7 @@ from pythonosc import udp_client
 from conversation.vision_camera import Camera
 from conversation import neuralnet_vision, neuralnet_dictionary, configuration, vision_camera
 
-LIVE_REPLAY = True # replay the predictions live without buffer
+LIVE_REPLAY = False # replay the predictions live without buffer
 
 SLIDING_WINDOW_SIZE = 50 # number of frames in sliding window
 
@@ -28,8 +28,8 @@ MESSAGE_RANDOMIZER_START = 1
 MESSAGE_RANDOMIZER_END = 1
 
 REPLAY_FPS_FACTOR = 1 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
-PAUSE_LENGTH = 35 # length in frames of darkness that triggers pause event
-PAUSE_BRIGHTNESS_THRESH = 84 # Threshhold defining pause if frame brightness is below the value
+PAUSE_LENGTH = 7 # length in frames of darkness that triggers pause event
+PAUSE_BRIGHTNESS_THRESH = 10 # Threshhold defining pause if frame brightness is below the value
 PREDICTION_BUFFER_MAXLEN = 200 # 10 seconds * 44.1 fps
 
 CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)

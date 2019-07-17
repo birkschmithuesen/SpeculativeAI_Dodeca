@@ -15,8 +15,8 @@ from keras import backend as kerasBackend
 import numpy as np
 
 #os.environ['CUDA_VISIBLE_DEVICES'] = '-1' #force Tensorflow to use the computed
-LOAD_MODEL = False
-SAVE_MODEL = True
+LOAD_MODEL = True
+SAVE_MODEL = False
 
 MODEL_FILE_PATH = './data/dictionary_model.h5'
 MODEL_TRAININGS_DATA_FILE_PATH = './data/trainingsset_dodeca.csv'
