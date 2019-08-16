@@ -32,6 +32,15 @@ var trainingsData = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 ///////////////////////////////////////////////////////////
 //   OSC
 ///////////////////////////////////////////////////////////
+
+OSCdef("sendTrainData",
+	{
+		arg msg;
+		oscOutForTraining.sendMsg("/record_sound_vector", trainingsData[0], trainingsData[1], trainingsData[2], trainingsData[3], trainingsData[4], trainingsData[5], trainingsData[6]);
+		trainingsData.postln;
+	}, "sendTrainData"
+);
+
 OSCdef("bassDrone/vol",
 	{
 		arg msg;
@@ -39,8 +48,6 @@ OSCdef("bassDrone/vol",
 		a.set(\t_env, 1); //call this everytime an osc msg comes in
 		bassDrone_vol.set(msg[1] * mixer_bassDrone);
 		trainingsData[0] = msg[1];
-		oscOutForTraining.sendMsg("/record_sound_vector", trainingsData[0], trainingsData[1], trainingsData[2], trainingsData[3], trainingsData[4], trainingsData[5], trainingsData[6]);
-		trainingsData.postln;
 	}, "bassDrone/vol"
 );
 
