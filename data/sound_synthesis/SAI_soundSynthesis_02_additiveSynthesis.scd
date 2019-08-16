@@ -123,7 +123,7 @@ EnvGen
 (
 
 {
-	var spec1 = [30, 3000, 'lin'].asSpec;
+	var spec1 = [440, 5000, 'lin'].asSpec;
 	var freq = spec1.map(In.kr(synth1_pitch).lag(global_lag))/ SampleRate.ir;
 	var distance = 3.00;
 	var spec2 = [0.42, 0.9, 'lin'].asSpec;
@@ -140,7 +140,7 @@ EnvGen
 
 	son = num / denom;
 	son = son * 0.004 * (10/(index+0.5));
-
+	son = Dis
 	Out.ar(bus_synth1, son);
 
 }.play;  // Use ".freqscope" or ".scope", both are illustrative.
