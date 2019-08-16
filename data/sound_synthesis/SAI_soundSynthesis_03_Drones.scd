@@ -12,7 +12,7 @@ var midDrone_bw = Bus.control(s, 1);
 var midDrone_freq = Bus.control(s, 1);
 var midDrone_mix = Bus.control(s, 1);
 var lead_vol = Bus.control(s, 1);
-var lead_freq = Bus.control(s, 1);
+var lead_pitch = Bus.control(s, 1);
 
 var bus_bassDrone = Bus.audio(s, 2);
 var bus_midDrone = Bus.audio(s, 2);
@@ -21,6 +21,7 @@ var bus_lead = Bus.audio(s, 2);
 var mixer_bassDrone = 1;
 var mixer_midDrone = 1;
 var mixer_lead = 1;
+var initializeSynth = 100;
 
 var global_lag = 3;
 var global_decay = 2;
@@ -70,6 +71,17 @@ OSCdef("midDrone/vol",
 		a.set(\t_env, 1); //call this everytime an osc msg comes in
 		midDrone_vol.set(msg[1] * mixer_midDrone);
 		trainingsData[3] = msg[1];
+		//Here comes a very stupid workaround to set the twop Oscilators to different frequencies. I don't know how to do it within in the initialization process.
+		if (initializeSynth > 0){
+			initializeSynth = initializeSynth - 1;
+		};
+		if (initializeSynth == 1) {
+		(
+			~synths_mid[0].set(\freq, 440);
+			~synths_mid[1].set(\freq, 655, \amp, 0.2);
+		)
+		};
+
 	}, "midDrone/vol"
 );
 
@@ -103,14 +115,14 @@ OSCdef("lead/vol",
 	}, "lead/vol"
 );
 
-OSCdef("lead/freq",
+OSCdef("lead/pitch",
 	{
 		arg msg;
 		//msg.postln;
 		a.set(\t_env, 1); //call this everytime an osc msg comes in
-		lead_freq.set(msg[1]);
+		lead_pitch.set(msg[1]);
 		trainingsData[7] = msg[1];
-	}, "lead/freq"
+	}, "lead/pitch"
 );
 
 OSCdef("mixer/bassDrone",
@@ -149,7 +161,7 @@ OSCdef("sound",
 		midDrone_bw.set(msg[5]);
 		midDrone_freq.set(msg[6]);
 		lead_vol.set(msg[7]);
-		lead_freq.set(msg[8]);
+		lead_pitch.set(msg[8]);
 	}, "sound"
 );
 
@@ -160,7 +172,7 @@ EnvGen
 (a = {
 	arg t_env;
 	var env = Env.new([1,1,0], [0.1,global_decay]).ar(0, t_env); //[0.5 -> hold time (max dur between osc msgs), 1 -> release time]
-			var result = Mix.ar([In.ar(bus_bassDrone)*In.kr(bassDrone_vol).lag(global_lag), In.ar(bus_midDrone)*In.kr(midDrone_vol).lag(global_lag), In.ar(bus_lead)*In.kr(lead_vol).lag(global_lag)])*env*4;
+			var result = Mix.ar([In.ar(bus_bassDrone)*In.kr(bassDrone_vol).lag(global_lag), In.ar(bus_midDrone)*In.kr(midDrone_vol).lag(global_lag), In.ar(bus_lead)*In.kr(lead_vol).lag(global_lag)])*env;
 	result = FreeVerb.ar(result);
 	Splay.ar(result);
 }.play;
@@ -457,12 +469,12 @@ s.waitForBoot({
 			observable (evaluate s.scope and adjust the
 			horizontal slider to watch the waveform)
 			*/
-			arg detune=0.1, freq=50, amp=0.3;
+			arg detune=0.22, freq=440, amp=0.2;
 			var sig;
-			var spec1 = [40, 15000, 'exp'].asSpec;
-			var bandPassFreq = spec1.map(In.kr(bassDrone_freq).lag(global_lag));
-			var spec2 = [0.1, 5.0, 'lin'].asSpec;
-			var bandPassBW = spec2.map(In.kr(bassDrone_bw).lag(global_lag));
+			var spec1 = [110, 15000, 'exp'].asSpec;
+			var bandPassFreq = spec1.map(In.kr(midDrone_freq).lag(global_lag));
+			var spec2 = [0.1, 3.0, 'lin'].asSpec;
+			var bandPassBW = spec2.map(In.kr(midDrone_bw).lag(global_lag));
 			sig = Osc.ar(
 				buf.bufnum,
 
@@ -535,62 +547,14 @@ s.waitForBoot({
 })
 );
 
-//the two Synths can be changed independently
-(
-~synths_mid[0].set(\freq, 440);
-~synths_mid[1].set(\freq, 655, \amp, 0.05);
-)
-)
-
-
-
-
-
-
-
-
-//watch:
-s.scope;
-/*(adjust horizontal slider on scope window
-as needed to stabilize waveform view)
-*/
-
-
-//change frequency
-~synths_mid.do(_.set(\freq, 50));
-
-
-
-//fade out
-~synths_mid.do(_.set(\gate, 0));
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//////////////////////////////////
 (
 
 {
-	var spec1 = [440, 5000, 'lin'].asSpec;
+	var spec1 = [1300, 16000, 'exp'].asSpec;
 	var freq = spec1.map(In.kr(lead_pitch).lag(global_lag))/ SampleRate.ir;
 	var distance = 3.00;
 	var spec2 = [0.42, 0.9, 'lin'].asSpec;
-	var index = spec2.map(In.kr(lead_pitch).lag(global_lag)); //MouseY.kr(0.42, 0.99);
+	var index = 0.0; //spec2.map(In.kr(lead_pitch).lag(global_lag)); //MouseY.kr(0.42, 0.99);
 	var theta, beta, num, denom, son;
 
 
@@ -602,27 +566,15 @@ as needed to stabilize waveform view)
 	denom = 1 + index.squared - (2 * index * cos(beta));
 
 	son = num / denom;
-	son = son * 0.004 * (10/(index+0.5));
-	son = Dis
-	Out.ar(bus_bassDrone, son);
-	Out.ar(bus_midDrone, son);
+	son = son * 0.8;
+	//son = Dis
 	Out.ar(bus_lead, son);
 
 }.play;  // Use ".freqscope" or ".scope", both are illustrative.
-);
-
-
-
-(
-{
-	var freq = 40 * (In.kr(synth2_pitch).lag(global_lag) * 103).midiratio;
-	var osc = WhiteNoise.ar(); //freq: freq, mul: In.kr(synth1_vol).lag(0.5));
-	osc = BBandPass.ar(in: osc, freq: freq, bw: 0.2, mul: 0.6 );
-	Out.ar(bus_synth2, osc);
-}.play
 )
 
 
+)
 
 
 
