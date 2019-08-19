@@ -29,7 +29,7 @@ INITIAL_EPOCHS = 500
 
 HIDDEN1_DIM = 512
 HIDDEN2_DIM = 64
-OUTPUT_DIM = 5
+OUTPUT_DIM = 8
 
 model = Sequential()
 
@@ -84,7 +84,7 @@ def new_model_handler(unused_addr, args):
                     bias_initializer=my_init))
     model.add(Dense(OUTPUT_DIM, activation='sigmoid',kernel_initializer=my_init,
                     bias_initializer=my_init))
-    sgd = SGD(lr=0.06, decay=1e-6, momentum=0.9, nesterov=True)
+    sgd = SGD(lr=0.5, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(loss='binary_crossentropy', optimizer=sgd, metrics=['accuracy'])
     model.fit(training_input, training_output, epochs=1, batch_size=32, shuffle=True)
     model._make_predict_function()
