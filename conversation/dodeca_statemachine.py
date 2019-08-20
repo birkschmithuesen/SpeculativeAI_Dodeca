@@ -25,10 +25,10 @@ SHOW_FRAMES = True #show window frames
 # multiple times (inluding 0, if set to start at 0)
 # into the prediction buffer
 MESSAGE_RANDOMIZER_START = 0
-MESSAGE_RANDOMIZER_END = 2
+MESSAGE_RANDOMIZER_END = 8
 
-REPLAY_FPS_FACTOR = 1 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
-PAUSE_LENGTH = 7 # length in frames of darkness that triggers pause event
+REPLAY_FPS_FACTOR = 4 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
+PAUSE_LENGTH = 3 # length in frames of darkness that triggers pause event
 PAUSE_BRIGHTNESS_THRESH = 10 # Threshhold defining pause if frame brightness is below the value
 PREDICTION_BUFFER_MAXLEN = 200 # 10 seconds * 44.1 fps
 
@@ -159,8 +159,10 @@ def prediction_buffer_remove_pause():
     Removes dark pause frames at the end of
     prediction_buffer
     """
+    # -1 because the last pause frame won't be recorded in state machine
     last_frame_counter = prediction_counter - (PAUSE_LENGTH - 1)
     while(prediction_buffer[-1][1] > last_frame_counter):
+        print("remove pause frame")
         prediction_buffer.pop()
 
 
@@ -269,7 +271,6 @@ class Recording(State):
             random_value = random.randint(MESSAGE_RANDOMIZER_START, MESSAGE_RANDOMIZER_END)
         for i in range(random_value):
             prediction_buffer.append((activation_vector, prediction_counter))
-            prediction_counter += 1
         fpscounter.record_end_new_frame()
 
     def next(self, image_frame):
