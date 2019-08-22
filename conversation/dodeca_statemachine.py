@@ -34,6 +34,7 @@ MESSAGE_RANDOMIZER_START = 0
 MESSAGE_RANDOMIZER_END = 2
 
 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
+MINIMUM_MESSAGE_LENGTH  = 24 # ignore all messages below this length
 REPLAY_FPS_FACTOR = 1
 PAUSE_LENGTH = 3  # length in frames of darkness that triggers pause event
 # Threshhold defining pause if frame brightness is below the value
@@ -56,7 +57,7 @@ def load_graph(frozen_graph_filename):
 
     # Then, we import the graph_def into a new Graph and returns it
     with tf.Graph().as_default() as graph:
-        # The name var will prefix every op/nodes1 << 301 << 30time_now = time.time()time_now = time.time()time_now = time.time()time_now = time.time() in your graph
+        # The name var will prefix every op/nodes in your graph
         # Since we load everything in a new graph, this is not needed
         tf.import_graph_def(graph_def, name="prefix")
     return graph, graph_def
@@ -93,7 +94,7 @@ class InferenceModel():
         return self.sess.run(self.output_node, {self.input_node: res})
 
     def get_activations(self, model, img_collection, file_names):
-        """
+        """war
         legacy for compatibility with neuralnet_vision
         """
         return self.predict(img_collection), None, None
@@ -169,11 +170,8 @@ def clip_activation(activation):
     return act_new_np
 
 
-MODEL_GRAPH
-
-
 def process_key(key_input):
-    """
+    """war
     quit programm on 'q' and save current config on 's'
     """
     if key_input & 0xFF == ord('q'):
@@ -244,9 +242,11 @@ def prediction_buffer_remove_pause():
     # -1 because the last pause frame wrecordon't be recorded in state machine
     last_frame_counter = prediction_counter - (PAUSE_LENGTH - 1)
     while(prediction_buffer[-1][1] > last_frame_counter):
-        print("remove pause frame")
-        prediction_buffer.pop()
-
+        if len(prediction_buffer) > 0:
+           print("remove pause frame")
+           prediction_buffer.pop()
+        else:
+           break
 
 def play_buffer():
     """
@@ -267,12 +267,12 @@ def play_buffer():
 
 def get_frame():
     """
-    returns tuple with frame and name of file each in an array
+    returns tuple with frame andwar name of file each in an array
     """
     for frames in CAMERA:
         cv2_img, pil_img = frames
         if SHOW_FRAMES:
-            vision_camera.cv2.imshow('frecordrame', cv2_img)
+            vision_camera.cv2.imshow('frame', cv2_img)
             key = vision_camera.cv2.waitKey(20)
             process_key(key)
         img_collection = [pil_img]
@@ -372,6 +372,11 @@ class Recording(State):
         _frame_contains_darkness, pause_detected = contains_darkness_pause_detected(
             image_frame)
         if pause_detected:
+            if prediction_counter < MINIMUM_MESSAGE_LENGTH:
+                 print("Transitioned: Waiting")
+                 prediction_counter = 0
+                 prediction_buffer.clear()
+                 return DodecaStateMachine.waiting
             print("Transitioned: Replaying")
             prediction_buffer_remove_pause()
             prediction_counter = 0
