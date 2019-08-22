@@ -19,8 +19,11 @@ from tensorflow.python.keras.layers import GlobalAveragePooling2D
 
 GENERATE_BIG_PICTURE = True
 TRANSFORM_FROM_CNN_DIM_TO_SOUND_DIM = True
-TRANSFORM_USING_PCA = True  # True: transform form 512 to 5 using PCA. Otherwise, using random matrix
-WORK_WITH_ORIGINAL_IMAGES = True  # True: compute the 512d vector from de original image. Otherwise, from Black/White
+# True: transform form 512 to 5 using PCA. Otherwise, using random matrix
+TRANSFORM_USING_PCA = True
+# True: compute the 512d vector from de original image. Otherwise, from
+# Black/White
+WORK_WITH_ORIGINAL_IMAGES = True
 CNN_DIM = 512
 SOUND_DIM = 5
 
@@ -40,10 +43,12 @@ if OUT_DIM == 1:
 
 if __name__ == '__main__':
     if not os.path.exists(OUT_DIR):
-        raise argparse.ArgumentTypeError("'{}' not a valid directory.".format(OUT_DIR))
+        raise argparse.ArgumentTypeError(
+            "'{}' not a valid directory.".format(OUT_DIR))
 
     if not os.path.exists(IN_DIR):
-        raise argparse.ArgumentTypeError("'{}' not a valid directory.".format(IN_DIR))
+        raise argparse.ArgumentTypeError(
+            "'{}' not a valid directory.".format(IN_DIR))
 
 
 def build_model():
@@ -52,9 +57,16 @@ def build_model():
     (GlobalAveragePooling2D) to transform the last volume (?,?,512) to a 512 dimensional vector
     :return: the model
     """
-    base_model = VGG16(weights='imagenet', input_shape=(224, 224, 3), include_top=False)  # do not load final Dense Layers
+    base_model = VGG16(
+        weights='imagenet',
+        input_shape=(
+            224,
+            224,
+            3),
+        include_top=False)  # do not load final Dense Layers
     top_model = Sequential()
-    top_model.add(GlobalAveragePooling2D())  # Transform Conv+Pooling in a vector (512 dimensions)
+    # Transform Conv+Pooling in a vector (512 dimensions)
+    top_model.add(GlobalAveragePooling2D())
     return Model(inputs=base_model.input, outputs=top_model(base_model.output))
 
 
@@ -70,9 +82,14 @@ def load_img(input_dir):
     for idx, img in enumerate(pred_img):
         print("Loading image", idx + 1, ":", img)
         file_names.append(img)
-        img_collection.append(image.load_img(img, target_size=(out_res, out_res)))
+        img_collection.append(
+            image.load_img(
+                img, target_size=(
+                    out_res, out_res)))
     if np.square(OUT_DIM) > len(img_collection):
-        raise ValueError("Cannot fit {} images in {}x{} grid".format(len(img_collection), OUT_DIM, OUT_DIM))
+        raise ValueError(
+            "Cannot fit {} images in {}x{} grid".format(
+                len(img_collection), OUT_DIM, OUT_DIM))
     return img_collection, file_names
 
 
@@ -85,6 +102,7 @@ def binarize_array(numpy_array, threshold=200):
             else:
                 numpy_array[i][j] = 0
     return numpy_array
+
 
 def get_activations(model, img_collection, file_names, save_files=False):
     """
@@ -113,7 +131,7 @@ def get_activations(model, img_collection, file_names, save_files=False):
         img_bw = Image.fromarray(xbw)
         img_bw = img_bw.convert('RGB')  # convert image to RGB
         if save_files:
-            img_bw.save(file_names[idx]+'.BW.jpg')
+            img_bw.save(file_names[idx] + '.BW.jpg')
         img_collection_bn.append(img_bw)
         if WORK_WITH_ORIGINAL_IMAGES:
             x = image.img_to_array(img)
@@ -125,8 +143,13 @@ def get_activations(model, img_collection, file_names, save_files=False):
         header = header + os.path.basename(file_names[idx]).split('.')[0] + ';'
     distances = distance_matrix(activations, activations)
     if save_files:
-        np.savetxt("out_vectors.csv", list(map(list, zip(*activations))), delimiter=";", header=header)
-        np.savetxt("out_distances.csv", distances, delimiter=";", header=header)
+        np.savetxt("out_vectors.csv", list(
+            map(list, zip(*activations))), delimiter=";", header=header)
+        np.savetxt(
+            "out_distances.csv",
+            distances,
+            delimiter=";",
+            header=header)
     return activations, header, img_collection_bn
 
 
@@ -137,14 +160,24 @@ def generate_tsne(activations):
     :param activations: a list with vectors
     :return: the representation of those vector in that 2 dimensional space
     """
-    tsne = TSNE(perplexity=perplexity, n_components=2, init='random', n_iter=tsne_iter)
+    tsne = TSNE(
+        perplexity=perplexity,
+        n_components=2,
+        init='random',
+        n_iter=tsne_iter)
     x_2d = tsne.fit_transform(np.array(activations)[0:to_plot, :])
     x_2d -= x_2d.min(axis=0)
     x_2d /= x_2d.max(axis=0)
     return x_2d
 
 
-def save_tsne_grid(img_collection, x_2d, output_res, output_dim, output_dir, out_name):
+def save_tsne_grid(
+        img_collection,
+        x_2d,
+        output_res,
+        output_dim,
+        output_dir,
+        out_name):
     """
     This function creates an image made of the original images placed relative to what is indicated in x_2d
     :param img_collection: the list with the loaded images
@@ -155,7 +188,8 @@ def save_tsne_grid(img_collection, x_2d, output_res, output_dim, output_dir, out
     :param out_name: name of the output image
     :return: This function produces a JPG image in the 'output_dir' directory
     """
-    grid = np.dstack(np.meshgrid(np.linspace(0, 1, output_dim), np.linspace(0, 1, output_dim))).reshape(-1, 2)
+    grid = np.dstack(np.meshgrid(np.linspace(0, 1, output_dim),
+                                 np.linspace(0, 1, output_dim))).reshape(-1, 2)
     cost_matrix = cdist(grid, x_2d, "sqeuclidean").astype(np.float32)
     cost_matrix = cost_matrix * (100000 / cost_matrix.max())
     row_asses, col_asses, _ = lapjv(cost_matrix)
@@ -165,7 +199,9 @@ def save_tsne_grid(img_collection, x_2d, output_res, output_dim, output_dir, out
     for pos, img in zip(grid_jv, img_collection[0:to_plot]):
         h_range = int(np.floor(pos[0] * (output_dim - 1) * output_res))
         w_range = int(np.floor(pos[1] * (output_dim - 1) * output_res))
-        out[h_range:h_range + output_res, w_range:w_range + output_res] = image.img_to_array(img)
+        out[h_range:h_range +
+            output_res, w_range:w_range +
+            output_res] = image.img_to_array(img)
 
     im = image.array_to_img(out)
     im.save(output_dir + out_name, quality=100)
@@ -225,11 +261,13 @@ def main():
 
     img_collection, names_of_file = load_img(IN_DIR)
 
-    activations, header, img_coll_bn = get_activations(model, img_collection, names_of_file, True)
+    activations, header, img_coll_bn = get_activations(
+        model, img_collection, names_of_file, True)
 
     if TRANSFORM_FROM_CNN_DIM_TO_SOUND_DIM:
         if TRANSFORM_USING_PCA:
-            # you can comment the following 3 lines when you have trained the PCA previously
+            # you can comment the following 3 lines when you have trained the
+            # PCA previously
             pca = PCA(n_components=SOUND_DIM)
             act_5dim = pca.fit_transform(activations)
             dump(pca, PCA_PATH)  # store the trained pca
@@ -254,7 +292,8 @@ def main():
             # M = M + MG
 
             # if you want to store the matrices in files you need to uncomment next lines
-            # Be careful!!! if the matrices already exist then these instructions will override them
+            # Be careful!!! if the matrices already exist then these
+            # instructions will override them
             np.save('matrixUniform', M)
             np.save('matrixGaussian', MG)
 
@@ -271,18 +310,31 @@ def main():
         print(activations)
 
         # store in files the new 5dim vectors and the pairwise distances
-        np.savetxt("out_vectors_5d.csv", list(map(list, zip(*activations))), delimiter=";", header=header)
+        np.savetxt("out_vectors_5d.csv", list(
+            map(list, zip(*activations))), delimiter=";", header=header)
         distances = distance_matrix(activations, activations)
-        np.savetxt("out_distances_5d.csv", distances, delimiter=";", header=header)
+        np.savetxt(
+            "out_distances_5d.csv",
+            distances,
+            delimiter=";",
+            header=header)
 
     if GENERATE_BIG_PICTURE:
         # Birk, from here it is only for generating the image. Actually, you do not need it but it is very cool to see
-        # it and it is useful in order to understand the nature of the vectors that the CNN produce
+        # it and it is useful in order to understand the nature of the vectors
+        # that the CNN produce
         print("Generating 2D representation.")
         x_2dim = generate_tsne(activations)
         print("Generating image grid.")
-        save_tsne_grid(img_collection, x_2dim, out_res, OUT_DIM, OUT_DIR, out_name='out_image_original.jpg')
-        save_tsne_grid(img_coll_bn, x_2dim, out_res, OUT_DIM, OUT_DIR, out_name='out_image_BW.jpg')
+        save_tsne_grid(img_collection, x_2dim, out_res, OUT_DIM,
+                       OUT_DIR, out_name='out_image_original.jpg')
+        save_tsne_grid(
+            img_coll_bn,
+            x_2dim,
+            out_res,
+            OUT_DIM,
+            OUT_DIR,
+            out_name='out_image_BW.jpg')
 
 
 if __name__ == '__main__':

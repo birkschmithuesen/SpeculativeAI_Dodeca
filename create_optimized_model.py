@@ -17,6 +17,7 @@ INFERENCE_BATCH_SIZE = 1
 MODEL = neuralnet_vision.build_model()
 MODEL.summary()
 
+
 def freeze_session(
         session,
         keep_var_names=None,

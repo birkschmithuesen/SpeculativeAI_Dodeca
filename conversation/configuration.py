@@ -4,7 +4,8 @@ vision system.
 """
 from configparser import SafeConfigParser
 
-LIST_OPTIONS = ["maxs", "mins"] #options in config to be interpreted as list
+LIST_OPTIONS = ["maxs", "mins"]  # options in config to be interpreted as list
+
 
 def list_to_string(lst):
     """
@@ -12,10 +13,12 @@ def list_to_string(lst):
     """
     return ",".join(map(str, lst))
 
+
 class ConversationConfig:
     """
     This class handles the configuration file parsing and saving
     """
+
     def __init__(self, path):
         self.parser = SafeConfigParser()
         self.parser_config_path = ""
@@ -57,7 +60,7 @@ class ConversationConfig:
                     DebugPrint("skip: %s" % option)
                 if option in LIST_OPTIONS:
                     dict1[option] = dict1[option].split(",")
-            except:
+            except BaseException:
                 print("exception on %s!" % option)
                 dict1[option] = None
         return dict1

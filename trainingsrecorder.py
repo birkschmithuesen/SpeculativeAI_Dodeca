@@ -22,7 +22,7 @@ OSC_PORT = 8005
 
 TRAININGS_SET_PATH = "./data/trainingsset_dodeca.csv"
 
-SHOW_FRAMES = True #show window frames
+SHOW_FRAMES = True  # show window frames
 
 CAMERA = Camera(224, 224)
 
@@ -30,6 +30,7 @@ trainingsset = []
 trainingsset_final = []
 
 stop_event = threading.Event()
+
 
 def get_frame():
     """
@@ -41,6 +42,7 @@ def get_frame():
         names_of_file = ["test"]
         return img_collection, names_of_file, cv2_img
 
+
 def process_trainingsset():
     """
     takes the trainings set images and transforms them to a
@@ -50,17 +52,18 @@ def process_trainingsset():
     MODEL = neuralnet_vision.build_model()
     MODEL.summary()
     for set in trainingsset:
-        soundvector = set [0]
+        soundvector = set[0]
         img_collection = set[1]
         names_of_file = set[2]
         cv2_img = set[3]
         if SHOW_FRAMES:
             vision_camera.cv2.imshow('frame', cv2_img)
             key = vision_camera.cv2.waitKey(20)
-        activation_vectors, header, img_coll_bn = neuralnet_vision.get_activations(\
+        activation_vectors, header, img_coll_bn = neuralnet_vision.get_activations(
             MODEL, img_collection, names_of_file)
         trainingsset_final.append((activation_vectors, soundvector))
     print("Finished processing trainings set")
+
 
 def save_to_disk():
     """
@@ -70,16 +73,17 @@ def save_to_disk():
         print("No trainings data received. Nothing written to disk.\n")
         return
     with open(TRAININGS_SET_PATH, mode="w") as csv_file:
-        fieldnames = ["image vector" + str (i) for i in range(512)]
-        fieldnames.extend(["sound vector" + str (i) for i in range(5)])
+        fieldnames = ["image vector" + str(i) for i in range(512)]
+        fieldnames.extend(["sound vector" + str(i) for i in range(5)])
         writer = csv.writer(csv_file, delimiter=" ")
-        #writer.writerow(fieldnames)
+        # writer.writerow(fieldnames)
         for image_vector, sound_vector in trainingsset_final:
             row = list(image_vector[0])
             row.extend(sound_vector)
             writer.writerow(row)
         abspath = os.path.realpath(csv_file.name)
         print("\n\nWritten trainings set to {}".format(abspath))
+
 
 def record(address, *args):
     """
@@ -89,11 +93,13 @@ def record(address, *args):
     img_collection, names_of_file, cv2_img = get_frame()
     trainingsset.append([soundvector, img_collection, names_of_file, cv2_img])
 
+
 def osc_stop(address, *args):
     """
     Callback osc dispatcher to stop recording
     """
     stop_recording()
+
 
 def signal_handler(signal, frame):
     """
@@ -101,6 +107,7 @@ def signal_handler(signal, frame):
     """
     print('You pressed Ctrl+C!')
     stop_recording()
+
 
 def stop_recording():
     """
@@ -112,6 +119,7 @@ def stop_recording():
         server.server_close()
         stop_event.set()
     threading.Thread(target=stop, daemon=True).start()
+
 
 def start_recording():
     """
@@ -125,6 +133,7 @@ def start_recording():
         (OSC_IP_ADDRESS, OSC_PORT), dispatcher_server)
     print("Serving on {}".format(server.server_address))
     threading.Thread(target=server.serve_forever, daemon=True).start()
+
 
 if __name__ == "__main__":
     start_recording()

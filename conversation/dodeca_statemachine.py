@@ -13,18 +13,19 @@ import tensorflow.contrib.tensorrt as trt
 from tensorflow.python.keras.preprocessing import image
 
 
-LIVE_REPLAY = False # replay the predictions live without buffer
+LIVE_REPLAY = False  # replay the predictions live without buffer
 
-SLIDING_WINDOW_SIZE = 50 # number of frames in sliding window
+SLIDING_WINDOW_SIZE = 50  # number of frames in sliding window
 
-TRANSFORM_USING_NEURAL_NET = True # True: transform from 512 to 5 using PCA. Otherwise, use neural net
+# True: transform from 512 to 5 using PCA. Otherwise, use neural net
+TRANSFORM_USING_NEURAL_NET = True
 
 OSC_IP_ADDRESS = "2.0.0.2"
 OSC_PORT = 57120
 CONFIG_PATH = "./data/conversation_config"
 PCA_PATH = './data/pca.joblib'
 
-SHOW_FRAMES = True #show window frames
+SHOW_FRAMES = True  # show window frames
 
 # these set tha random range for inserting a predictions
 # multiple times (inluding 0, if set to start at 0)
@@ -32,10 +33,12 @@ SHOW_FRAMES = True #show window frames
 MESSAGE_RANDOMIZER_START = 0
 MESSAGE_RANDOMIZER_END = 2
 
-REPLAY_FPS_FACTOR = 1 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
-PAUSE_LENGTH = 3 # length in frames of darkness that triggers pause event
-PAUSE_BRIGHTNESS_THRESH = 10 # Threshhold defining pause if frame brightness is below the value
-PREDICTION_BUFFER_MAXLEN = 200 # 10 seconds * 44.1 fps
+# realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
+REPLAY_FPS_FACTOR = 1
+PAUSE_LENGTH = 3  # length in frames of darkness that triggers pause event
+# Threshhold defining pause if frame brightness is below the value
+PAUSE_BRIGHTNESS_THRESH = 10
+PREDICTION_BUFFER_MAXLEN = 200  # 10 seconds * 44.1 fps
 
 TENSORRT_MODEL_PATH = "data/TensorRT_model.pb"
 
@@ -43,14 +46,15 @@ CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
 
 CAMERA = Camera(224, 224)
 
+
 def load_graph(frozen_graph_filename):
-    # We load the protobuf file from the disk and parse it to retrieve the 
+    # We load the protobuf file from the disk and parse it to retrieve the
     # unserialized graph_def
     with tf.gfile.GFile(frozen_graph_filename, "rb") as f:
         graph_def = tf.GraphDef()
         graph_def.ParseFromString(f.read())
 
-    # Then, we import the graph_def into a new Graph and returns it 
+    # Then, we import the graph_def into a new Graph and returns it
     with tf.Graph().as_default() as graph:
         # The name var will prefix every op/nodes1 << 301 << 30time_now = time.time()time_now = time.time()time_now = time.time()time_now = time.time() in your graph
         # Since we load everything in a new graph, this is not needed
@@ -62,19 +66,24 @@ class InferenceModel():
     """
     This Model is used to run the tensorrt optimized graph
     """
+
     def __init__(self):
         """
         initialize and run session once to load environment
         """
         graph, graph_def = load_graph(TENSORRT_MODEL_PATH)
         self.input_node = graph.get_tensor_by_name('prefix/input_1:0')
-        self.output_node = graph.get_tensor_by_name('prefix/sequential/global_average_pooling2d/Mean:0')
+        self.output_node = graph.get_tensor_by_name(
+            'prefix/sequential/global_average_pooling2d/Mean:0')
         self.sess = tf.Session(graph=graph)
-        self.sess.run(self.output_node, {self.input_node: np.zeros((1, 224, 224, 3))})
+        self.sess.run(
+            self.output_node, {
+                self.input_node: np.zeros(
+                    (1, 224, 224, 3))})
 
     def predict(self, images):
         """
-        returns a 512 dim vector using 
+        returns a 512 dim vector using
         """
         res = []
         for img in images:
@@ -84,10 +93,11 @@ class InferenceModel():
         return self.sess.run(self.output_node, {self.input_node: res})
 
     def get_activations(self, model, img_collection, file_names):
-         """
-         legacy for compatibility with neuralnet_vision
-         """
-         return self.predict(img_collection), None, None
+        """
+        legacy for compatibility with neuralnet_vision
+        """
+        return self.predict(img_collection), None, None
+
 
 if os.path.isfile(TENSORRT_MODEL_PATH):
     print("Using optimized inference. {} found!".format(TENSORRT_MODEL_PATH))
@@ -98,12 +108,13 @@ else:
     MODEL = neuralnet_vision
     MODEL_GRAPH = neuralnet_vision.build_model()
     MODEL_GRAPH.summary()
-    
+
 
 class FPSCounter():
     """
     This class tracks average fps
     """
+
     def __init__(self):
         self.fps_sum = 0.0
         self.counter = 0.0
@@ -113,7 +124,7 @@ class FPSCounter():
         time_now = time.time()
         if self.last_timestamp:
             time_delta = time_now - self.last_timestamp
-            self.fps_sum += 1.0/time_delta
+            self.fps_sum += 1.0 / time_delta
             self.counter += 1
         self.last_timestamp = time_now
 
@@ -123,10 +134,11 @@ class FPSCounter():
     def get_average_fps(self):
         if self.counter == 0:
             return 0
-        average = self.fps_sum/self.counter
+        average = self.fps_sum / self.counter
         self.fps_sum = 0
         self.counter = 0
         return average
+
 
 def save_current_config():
     """
@@ -134,6 +146,7 @@ def save_current_config():
     """
     print("Saving current config")
     config.save_config(config_tracker)
+
 
 def clip_activation(activation):
     """
@@ -154,7 +167,11 @@ def clip_activation(activation):
         print(activation_diff)
         print("")
     return act_new_np
+
+
 MODEL_GRAPH
+
+
 def process_key(key_input):
     """
     quit programm on 'q' and save current config on 's'
@@ -165,6 +182,7 @@ def process_key(key_input):
         exit(0)
     elif key_input & 0xFF == ord('s'):
         save_current_config()
+
 
 def reduce_to_5dim(activations):
     """
@@ -186,16 +204,18 @@ def reduce_to_5dim(activations):
         # act_5dim = act_5dim + MG
     return res_5dim
 
+
 def contains_darkness(image_frame):
     """
     Return true if average frame brightness is
     below PAUSE_BRIGHTNESS_THRESH
     """
-    image = np.zeros((224,224,3), np.uint8)
+    image = np.zeros((224, 224, 3), np.uint8)
     cv2.cvtColor(image_frame, cv2.COLOR_RGB2HSV, image)
-    brightness = np.mean(image[:,:,2])
+    brightness = np.mean(image[:, :, 2])
     print("Brightness: {}\n".format(brightness))
     return brightness < PAUSE_BRIGHTNESS_THRESH
+
 
 def contains_darkness_pause_detected(image_frame):
     """
@@ -214,6 +234,7 @@ def contains_darkness_pause_detected(image_frame):
     else:
         pause_counter = 0
     return is_dark, False
+
 
 def prediction_buffer_remove_pause():
     """
@@ -240,7 +261,9 @@ def play_buffer():
         print(prediction)
         CLIENT.send_message("/sound", prediction)
         if replay_fps > 0:
-            time.sleep(1/replay_fps) #ensure playback speed matches framerate
+            # ensure playback speed matches framerate
+            time.sleep(1 / replay_fps)
+
 
 def get_frame():
     """
@@ -256,6 +279,7 @@ def get_frame():
         names_of_file = ["test"]
         return img_collection, names_of_file, cv2_img
 
+
 def prediction_postprocessing(activation_vectors):
     """
     Reduces vector dimension from 512 to 5 and then normalizes clips the
@@ -270,7 +294,7 @@ def prediction_postprocessing(activation_vectors):
     if len(act_5dim_sliding) > SLIDING_WINDOW_SIZE:
         act_5dim_sliding.pop(0)
 
-    #activations = neuralnet_vision.sigmoid(act_5dim, coef=0.05)  # Sigmoid function
+    # activations = neuralnet_vision.sigmoid(act_5dim, coef=0.05)  # Sigmoid function
     #activations = act_5dim
     mins = np.array(config.config["mins"], dtype="float64")
     maxs = np.array(config.config["maxs"], dtype="float64")
@@ -282,11 +306,14 @@ def prediction_postprocessing(activation_vectors):
     activation_vector = activations_5dim[-1]
     return clip_activation(activation_vector)
 
+
 class State:
     def run(self):
         assert 0, "run not implemented"
+
     def next(self, input):
         assert 0, "next not implemented"
+
 
 class StateMachine:
     def __init__(self, initialState):
@@ -298,45 +325,52 @@ class StateMachine:
         self.currentState = self.currentState.next(cv2_img)
         self.currentState.run((img_collection, names_of_file))
 
+
 class Waiting(State):
     """
     Waiting for a non dark frame to transition
     to recording state
     """
+
     def run(self, image_frames=None):
         pass
 
     def next(self, image_frame):
-        frame_contains_darkness, _pause_detected = contains_darkness_pause_detected(image_frame)
+        frame_contains_darkness, _pause_detected = contains_darkness_pause_detected(
+            image_frame)
         if frame_contains_darkness:
             return DodecaStateMachine.waiting
         print("Transitioned: Recording")
         return DodecaStateMachine.recording
+
 
 class Recording(State):
     """
     Recording the image prediction frames and waiting for detecting a pause
     to transition to replay statec
     """
+
     def run(self, image_frames):
         global prediction_counter
         fpscounter.record_start_new_frame()
         img_collection, names_of_file = image_frames
-        activation_vectors, header, img_coll_bn = MODEL.get_activations(\
+        activation_vectors, header, img_coll_bn = MODEL.get_activations(
             MODEL_GRAPH, img_collection, names_of_file)
         activation_vector = prediction_postprocessing(activation_vectors)
         prediction_counter += 1
         if LIVE_REPLAY:
             random_value = 1
         else:
-            random_value = random.randint(MESSAGE_RANDOMIZER_START, MESSAGE_RANDOMIZER_END)
+            random_value = random.randint(
+                MESSAGE_RANDOMIZER_START, MESSAGE_RANDOMIZER_END)
         for i in range(random_value):
             prediction_buffer.append((activation_vector, prediction_counter))
         fpscounter.record_end_new_frame()
 
     def next(self, image_frame):
         global prediction_counter
-        _frame_contains_darkness, pause_detected = contains_darkness_pause_detected(image_frame)
+        _frame_contains_darkness, pause_detected = contains_darkness_pause_detected(
+            image_frame)
         if pause_detected:
             print("Transitioned: Replaying")
             prediction_buffer_remove_pause()
@@ -345,20 +379,24 @@ class Recording(State):
         else:
             return DodecaStateMachine.recording
 
+
 class Replaying(State):
     """
     Replaying the recorded image based predictions and after
     finishing transitioning to waiting state.
     """
+
     def run(self, image_frames=None):
         play_buffer()
 
     def next(self, image_frame):
         return DodecaStateMachine.waiting
 
+
 class DodecaStateMachine(StateMachine):
     def __init__(self):
         StateMachine.__init__(self, DodecaStateMachine.waiting)
+
 
 act_5dim_sliding = []
 config_tracker = {}
@@ -382,6 +420,7 @@ if LIVE_REPLAY:
     def new_next_recording(image_frame):
         prediction_counter = 0
         return DodecaStateMachine.replaying
+
     def new_next_replaying(image_frame):
         return DodecaStateMachine.recording
     DodecaStateMachine.recording.next = new_next_recording
