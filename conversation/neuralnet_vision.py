@@ -30,7 +30,6 @@ OUT_DIR = './data/'  # destination directory for output image
 
 PCA_PATH = './data/pca.joblib'
 
-
 to_plot = np.square(OUT_DIM)
 out_res = 224  # width/height of images in output square image
 perplexity = 10  # TSNE perplexity
@@ -53,7 +52,7 @@ def build_model():
     (GlobalAveragePooling2D) to transform the last volume (?,?,512) to a 512 dimensional vector
     :return: the model
     """
-    base_model = VGG16(weights='imagenet', include_top=False)  # do not load final Dense Layers
+    base_model = VGG16(weights='imagenet', input_shape=(224, 224, 3), include_top=False)  # do not load final Dense Layers
     top_model = Sequential()
     top_model.add(GlobalAveragePooling2D())  # Transform Conv+Pooling in a vector (512 dimensions)
     return Model(inputs=base_model.input, outputs=top_model(base_model.output))

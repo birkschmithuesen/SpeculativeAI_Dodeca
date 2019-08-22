@@ -4,9 +4,14 @@ from collections import deque
 import random
 import numpy as np
 import cv2
+import os
 from pythonosc import udp_client
 from conversation.vision_camera import Camera
 from conversation import neuralnet_vision, neuralnet_dictionary, configuration, vision_camera
+import tensorflow as tf
+import tensorflow.contrib.tensorrt as trt
+from tensorflow.python.keras.preprocessing import image
+
 
 LIVE_REPLAY = False # replay the predictions live without buffer
 
@@ -25,19 +30,75 @@ SHOW_FRAMES = True #show window frames
 # multiple times (inluding 0, if set to start at 0)
 # into the prediction buffer
 MESSAGE_RANDOMIZER_START = 0
-MESSAGE_RANDOMIZER_END = 8
+MESSAGE_RANDOMIZER_END = 2
 
-REPLAY_FPS_FACTOR = 4 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
+REPLAY_FPS_FACTOR = 1 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
 PAUSE_LENGTH = 3 # length in frames of darkness that triggers pause event
 PAUSE_BRIGHTNESS_THRESH = 10 # Threshhold defining pause if frame brightness is below the value
 PREDICTION_BUFFER_MAXLEN = 200 # 10 seconds * 44.1 fps
 
+TENSORRT_MODEL_PATH = "data/TensorRT_model.pb"
+
 CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
 
 CAMERA = Camera(224, 224)
-#camera.show_capture()
-MODEL = neuralnet_vision.build_model()
-MODEL.summary()
+
+def load_graph(frozen_graph_filename):
+    # We load the protobuf file from the disk and parse it to retrieve the 
+    # unserialized graph_def
+    with tf.gfile.GFile(frozen_graph_filename, "rb") as f:
+        graph_def = tf.GraphDef()
+        graph_def.ParseFromString(f.read())
+
+    # Then, we import the graph_def into a new Graph and returns it 
+    with tf.Graph().as_default() as graph:
+        # The name var will prefix every op/nodes1 << 301 << 30time_now = time.time()time_now = time.time()time_now = time.time()time_now = time.time() in your graph
+        # Since we load everything in a new graph, this is not needed
+        tf.import_graph_def(graph_def, name="prefix")
+    return graph, graph_def
+
+
+class InferenceModel():
+    """
+    This Model is used to run the tensorrt optimized graph
+    """
+    def __init__(self):
+        """
+        initialize and run session once to load environment
+        """
+        graph, graph_def = load_graph(TENSORRT_MODEL_PATH)
+        self.input_node = graph.get_tensor_by_name('prefix/input_1:0')
+        self.output_node = graph.get_tensor_by_name('prefix/sequential/global_average_pooling2d/Mean:0')
+        self.sess = tf.Session(graph=graph)
+        self.sess.run(self.output_node, {self.input_node: np.zeros((1, 224, 224, 3))})
+
+    def predict(self, images):
+        """
+        returns a 512 dim vector using 
+        """
+        res = []
+        for img in images:
+            arr = neuralnet_vision.image.img_to_array(img)
+            arr = neuralnet_vision.preprocess_input(arr)
+            res.append(arr)
+        return self.sess.run(self.output_node, {self.input_node: res})
+
+    def get_activations(self, model, img_collection, file_names):
+         """
+         legacy for compatibility with neuralnet_vision
+         """
+         return self.predict(img_collection), None, None
+
+if os.path.isfile(TENSORRT_MODEL_PATH):
+    print("Using optimized inference. {} found!".format(TENSORRT_MODEL_PATH))
+    MODEL = InferenceModel()
+    MODEL_GRAPH = None
+else:
+    print("Using unoptimized inference. {} not found!".format(TENSORRT_MODEL_PATH))
+    MODEL = neuralnet_vision
+    MODEL_GRAPH = neuralnet_vision.build_model()
+    MODEL_GRAPH.summary()
+    
 
 class FPSCounter():
     """
@@ -93,7 +154,7 @@ def clip_activation(activation):
         print(activation_diff)
         print("")
     return act_new_np
-
+MODEL_GRAPH
 def process_key(key_input):
     """
     quit programm on 'q' and save current config on 's'
@@ -159,7 +220,7 @@ def prediction_buffer_remove_pause():
     Removes dark pause frames at the end of
     prediction_buffer
     """
-    # -1 because the last pause frame won't be recorded in state machine
+    # -1 because the last pause frame wrecordon't be recorded in state machine
     last_frame_counter = prediction_counter - (PAUSE_LENGTH - 1)
     while(prediction_buffer[-1][1] > last_frame_counter):
         print("remove pause frame")
@@ -188,7 +249,7 @@ def get_frame():
     for frames in CAMERA:
         cv2_img, pil_img = frames
         if SHOW_FRAMES:
-            vision_camera.cv2.imshow('frame', cv2_img)
+            vision_camera.cv2.imshow('frecordrame', cv2_img)
             key = vision_camera.cv2.waitKey(20)
             process_key(key)
         img_collection = [pil_img]
@@ -255,14 +316,14 @@ class Waiting(State):
 class Recording(State):
     """
     Recording the image prediction frames and waiting for detecting a pause
-    to transition to replay state
+    to transition to replay statec
     """
     def run(self, image_frames):
         global prediction_counter
         fpscounter.record_start_new_frame()
         img_collection, names_of_file = image_frames
-        activation_vectors, header, img_coll_bn = neuralnet_vision.get_activations(\
-            MODEL, img_collection, names_of_file)
+        activation_vectors, header, img_coll_bn = MODEL.get_activations(\
+            MODEL_GRAPH, img_collection, names_of_file)
         activation_vector = prediction_postprocessing(activation_vectors)
         prediction_counter += 1
         if LIVE_REPLAY:
