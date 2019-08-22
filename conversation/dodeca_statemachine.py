@@ -28,15 +28,15 @@ SHOW_FRAMES = True  # show window frames
 
 # these set tha random range for inserting/removing predictions
 # N times into the prediction buffer
-MESSAGE_RANDOMIZER_START = 1 #should be at least 1!
-MESSAGE_RANDOMIZER_END = 2
+MESSAGE_RANDOMIZER_START = 0 # 0 - write the frame alays one time. 1 - write the message -1 till 2 times into the buffer
+MESSAGE_RANDOMIZER_END = 0
 
 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
-MINIMUM_MESSAGE_LENGTH  = 24 # ignore all messages below this length
+MINIMUM_MESSAGE_LENGTH  = 5 # ignore all messages below this length
 REPLAY_FPS_FACTOR = 1
-PAUSE_LENGTH = 3  # length in frames of darkness that triggers pause event
+PAUSE_LENGTH = 4  # length in frames of darkness that triggers pause event
 # Threshhold defining pause if frame brightness is below the value
-PAUSE_BRIGHTNESS_THRESH = 10
+PAUSE_BRIGHTNESS_THRESH = 3.5
 PREDICTION_BUFFER_MAXLEN = 200  # 10 seconds * 44.1 fps
 
 TENSORRT_MODEL_PATH = "data/TensorRT_model.pb"
@@ -267,7 +267,7 @@ def play_buffer():
 
 def get_frame():
     """import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     returns tuple with frame andwar name of file each in an array
     """
     for frames in CAMERA:
@@ -325,7 +325,7 @@ class StateMachine:
         self.currentState = self.currentState.next(cv2_img)
         self.currentState.run((img_collection, names_of_file))
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 class Waiting(State):
     """
@@ -349,7 +349,7 @@ class Recording(State):
     """
     Recording the image prediction frames and waiting for detecting a pause
     to transition to replay statecimport os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     """
 
     def run(self, image_frames):
