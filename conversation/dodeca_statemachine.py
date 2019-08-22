@@ -244,6 +244,7 @@ def prediction_buffer_remove_pause():
         return
     while(prediction_buffer[-1][1] > last_frame_counter):
         prediction_buffer.pop()
+        prediction_counter -= 1
         if len(prediction_buffer) == 0:
            return
 
