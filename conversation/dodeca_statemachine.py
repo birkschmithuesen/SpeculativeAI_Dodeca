@@ -27,10 +27,9 @@ PCA_PATH = './data/pca.joblib'
 
 SHOW_FRAMES = True  # show window frames
 
-# these set tha random range for inserting a predictions
-# multiple times (inluding 0, if set to start at 0)
-# into the prediction buffer
-MESSAGE_RANDOMIZER_START = 0
+# these set tha random range for inserting/removing predictions
+# N times into the prediction buffer
+MESSAGE_RANDOMIZER_START = 1 #should be at least 1!
 MESSAGE_RANDOMIZER_END = 2
 
 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
@@ -143,7 +142,7 @@ class FPSCounter():
 
 def save_current_config():
     """
-    safe all current settings of the app
+    safe all current settings ofMINIMUM_MESSAGE_LENGTH the app
     """
     print("Saving current config")
     config.save_config(config_tracker)
@@ -241,16 +240,16 @@ def prediction_buffer_remove_pause():
     """
     # -1 because the last pause frame wrecordon't be recorded in state machine
     last_frame_counter = prediction_counter - (PAUSE_LENGTH - 1)
+    if len(prediction_buffer) == 0:
+        return
     while(prediction_buffer[-1][1] > last_frame_counter):
-        if len(prediction_buffer) > 0:
-           print("remove pause frame")
-           prediction_buffer.pop()
-        else:
-           break
+        prediction_buffer.pop()
+        if len(prediction_buffer) == 0:
+           return
 
 def play_buffer():
     """
-    Send out all sound predictions in the buffer with the
+    Send out all sframes_to_reound predictions in the buffer with the
     configured REPLAY_FPS_FACTOR until it's empty
     """
     real_fps = fpscounter.get_average_fps()
@@ -352,20 +351,32 @@ class Recording(State):
 
     def run(self, image_frames):
         global prediction_counter
+        global frames_to_remove
         fpscounter.record_start_new_frame()
         img_collection, names_of_file = image_frames
         activation_vectors, header, img_coll_bn = MODEL.get_activations(
             MODEL_GRAPH, img_collection, names_of_file)
         activation_vector = prediction_postprocessing(activation_vectors)
+        fpscounter.record_end_new_frame()
         prediction_counter += 1
         if LIVE_REPLAY:
             random_value = 1
         else:
             random_value = random.randint(
                 MESSAGE_RANDOMIZER_START, MESSAGE_RANDOMIZER_END)
-        for i in range(random_value):
-            prediction_buffer.append((activation_vector, prediction_counter))
-        fpscounter.record_end_new_frame()
+            should_increase_length = random.randint(
+                0, 1)
+        if should_increase_length:
+            for i in range(random_value):
+                prediction_buffer.append((activation_vector, prediction_counter))
+        else:
+            frames_to_remove += random_value - 1
+        while(frames_to_remove > 0):
+                 if len(prediction_buffer) > MINIMUM_MESSAGE_LENGTH:
+                     prediction_buffer.pop()
+                     frames_to_remove -= 1
+                 else:
+                     break
 
     def next(self, image_frame):
         global prediction_counter
@@ -374,12 +385,12 @@ class Recording(State):
         if pause_detected:
             if prediction_counter < MINIMUM_MESSAGE_LENGTH:
                  print("Transitioned: Waiting")
-                 prediction_counter = 0
+                 prediction_counter = frames_to_remove = 0
                  prediction_buffer.clear()
                  return DodecaStateMachine.waiting
             print("Transitioned: Replaying")
             prediction_buffer_remove_pause()
-            prediction_counter = 0
+            prediction_counter = frames_to_remove = 0
             return DodecaStateMachine.replaying
         else:
             return DodecaStateMachine.recording
@@ -415,6 +426,7 @@ print(config.config)
 prediction_buffer = deque(maxlen=PREDICTION_BUFFER_MAXLEN)
 pause_counter = 0
 prediction_counter = 0
+frames_to_remove = 0
 fpscounter = FPSCounter()
 
 DodecaStateMachine.waiting = Waiting()
