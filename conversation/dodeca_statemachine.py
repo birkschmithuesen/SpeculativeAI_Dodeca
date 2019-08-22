@@ -272,7 +272,7 @@ def get_frame():
     for frames in CAMERA:
         cv2_img, pil_img = frames
         if SHOW_FRAMES:
-            vision_camera.cv2.imshow('frecordrame', cv2_img)
+            vision_camera.cv2.imshow('frame', cv2_img)
             key = vision_camera.cv2.waitKey(20)
             process_key(key)
         img_collection = [pil_img]
@@ -375,6 +375,7 @@ class Recording(State):
             if prediction_counter < MINIMUM_MESSAGE_LENGTH:
                  print("Transitioned: Waiting")
                  prediction_counter = 0
+                 prediction_buffer.clear()
                  return DodecaStateMachine.waiting
             print("Transitioned: Replaying")
             prediction_buffer_remove_pause()
