@@ -12,7 +12,6 @@ import tensorflow as tf
 import tensorflow.contrib.tensorrt as trt
 from tensorflow.python.keras.preprocessing import image
 
-
 LIVE_REPLAY = False  # replay the predictions live without buffer
 
 SLIDING_WINDOW_SIZE = 50  # number of frames in sliding window
@@ -46,6 +45,7 @@ CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
 
 CAMERA = Camera(224, 224)
 
+if type(tf.contrib) != type(tf): tf.contrib._warning = None
 
 def load_graph(frozen_graph_filename):
     # We load the protobuf file from the disk and parse it to retrieve the
@@ -53,7 +53,6 @@ def load_graph(frozen_graph_filename):
     with tf.gfile.GFile(frozen_graph_filename, "rb") as f:
         graph_def = tf.GraphDef()
         graph_def.ParseFromString(f.read())
-
     # Then, we import the graph_def into a new Graph and returns it
     with tf.Graph().as_default() as graph:
         # The name var will prefix every op/nodes in your graph
@@ -142,7 +141,7 @@ class FPSCounter():
 
 def save_current_config():
     """
-    safe all current settings ofMINIMUM_MESSAGE_LENGTH the app
+    safe all current settings of the app
     """
     print("Saving current config")
     config.save_config(config_tracker)
@@ -205,7 +204,8 @@ def reduce_to_5dim(activations):
 def contains_darkness(image_frame):
     """
     Return true if average frame brightness is
-    below PAUSE_BRIGHTNESS_THRESH
+    below PAUSE_BRIGHTNESfrom tensorflow.python.util import deprecation
+deprecation._PRINT_DEPRECATION_WARNINGS = FalseS_THRESH
     """
     image = np.zeros((224, 224, 3), np.uint8)
     cv2.cvtColor(image_frame, cv2.COLOR_RGB2HSV, image)
@@ -265,7 +265,8 @@ def play_buffer():
 
 
 def get_frame():
-    """
+    """import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
     returns tuple with frame andwar name of file each in an array
     """
     for frames in CAMERA:
@@ -288,7 +289,6 @@ def prediction_postprocessing(activation_vectors):
 
     if TRANSFORM_USING_NEURAL_NET:
         return np.array(act_5dim, dtype="float64")
-
     act_5dim_sliding.append(act_5dim[0])
     if len(act_5dim_sliding) > SLIDING_WINDOW_SIZE:
         act_5dim_sliding.pop(0)
@@ -323,7 +323,8 @@ class StateMachine:
         img_collection, names_of_file, cv2_img = get_frame()
         self.currentState = self.currentState.next(cv2_img)
         self.currentState.run((img_collection, names_of_file))
-
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 
 class Waiting(State):
     """
@@ -346,7 +347,8 @@ class Waiting(State):
 class Recording(State):
     """
     Recording the image prediction frames and waiting for detecting a pause
-    to transition to replay statec
+    to transition to replay statecimport os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
     """
 
     def run(self, image_frames):
@@ -360,12 +362,13 @@ class Recording(State):
         fpscounter.record_end_new_frame()
         prediction_counter += 1
         if LIVE_REPLAY:
-            random_value = 1
+            random_value = 0
         else:
             random_value = random.randint(
                 MESSAGE_RANDOMIZER_START, MESSAGE_RANDOMIZER_END)
             should_increase_length = random.randint(
                 0, 1)
+        prediction_buffer.append((activation_vector, prediction_counter))
         if should_increase_length:
             for i in range(random_value):
                 prediction_buffer.append((activation_vector, prediction_counter))
