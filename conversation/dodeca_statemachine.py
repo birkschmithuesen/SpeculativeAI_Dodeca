@@ -43,7 +43,10 @@ TENSORRT_MODEL_PATH = "data/TensorRT_model.pb"
 
 CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
 
-CAMERA = Camera(224, 224)
+ZOOM_AREA_WIDTH = 480
+ZOOME_AREA_HEIGHT = 480
+
+CAMERA = Camera(224, 224, ZOOM_AREA_WIDTH, ZOOME_AREA_HEIGHT)
 
 if type(tf.contrib) != type(tf): tf.contrib._warning = None
 
@@ -111,7 +114,7 @@ else:
 
 class FPSCounter():
     """
-    This class tracks average fps
+    This class tracks average fpshttps://docs.opencv.org/3.4.0/da/d54/group__imgproc__transform.html#ga47a974309e9102f5f08231edc7e7529d
     """
 
     def __init__(self):
@@ -238,6 +241,7 @@ def prediction_buffer_remove_pause():
     Removes dark pause frames at the end of
     prediction_buffer
     """
+    global prediction_counter
     # -1 because the last pause frame wrecordon't be recorded in state machine
     last_frame_counter = prediction_counter - (PAUSE_LENGTH - 1)
     if len(prediction_buffer) == 0:

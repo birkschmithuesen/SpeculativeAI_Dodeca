@@ -6,40 +6,47 @@ import platform
 import cv2
 from PIL import Image
 
+
 class Camera():
     """
     Camera contains all functionality necessary to capture frames
     from a camera for further processing in keras
     """
 
-    def __init__(self, frame_width, frame_height, fps=120):
+    def __init__(self, frame_width, frame_height, frame_section_width, frame_section_height, fps=120):
         """
         Creates new camera object with given configuration.
         :param frame_width: Width of camera frame
         :param frame_height: Height of camera frame
+        :param frame_section_width: Width of camera frame section that will be scaled
+        :param frame_section_height: Height of camera frame section that will be scaled
         :param fps: Frames per second setting of camera
         :return: New Camera object
         """
         self.frame_width = frame_width
         self.frame_height = frame_height
-        id = 0
+        self.frame_section_width = frame_section_width
+        self.frame_section_height = frame_section_height
+        id = 1
         if any(platform.win32_ver()):
             self.video_capture = cv2.VideoCapture(id + cv2.CAP_DSHOW)
         else:
             self.video_capture = cv2.VideoCapture(id)
         if not self.video_capture.isOpened():
             raise Exception("Could not open video device")
-        # Set properties. Each returns === True on success (i.e. correct resolution)
-        self.video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
-        self.video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
-        self.actual_frame_width = self.video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)
-        self.actual_frame_height = self.video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        # Set properties. Each returns === True on success (i.e. correct
+        # resolution)
+        #self.video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, frame_section_width)
+        #self.video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_section_height)
+        self.actual_frame_width = self.video_capture.get(
+            cv2.CAP_PROP_FRAME_WIDTH)
+        self.actual_frame_height = self.video_capture.get(
+            cv2.CAP_PROP_FRAME_HEIGHT)
         self.video_capture.set(cv2.CAP_PROP_FPS, fps)
-        self.video_capture.set(cv2.CAP_PROP_SETTINGS,0)
+        self.video_capture.set(cv2.CAP_PROP_SETTINGS, 0)
         print("Initializing camera")
         print("actual_frame_width:" + str(self.actual_frame_width))
         print("actual_frame_height:" + str(self.actual_frame_height))
-
 
     def show_capture(self):
         """
@@ -61,11 +68,12 @@ class Camera():
         :param frame: Frame to be cropped
         :return: cropped frame
         """
-        x = (self.actual_frame_width - self.frame_width)/2
-        y = (self.actual_frame_height - self.frame_height)/2
+        x = (self.actual_frame_width - self.frame_section_width) / 2
+        y = (self.actual_frame_height - self.frame_section_height) / 2
         x = int(x)
         y = int(y)
-        return frame[y:y+self.frame_height, x:x+self.frame_width]
+        cropped_frame = frame[y:y + self.frame_section_height, x:x + self.frame_section_width]
+        return cv2.resize(cropped_frame, (self.frame_height, self.frame_width), interpolation=cv2.INTER_AREA)
 
     def release(self):
         """
