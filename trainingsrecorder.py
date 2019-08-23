@@ -15,7 +15,7 @@ import platform
 import csv
 from pythonosc import osc_server, dispatcher
 from conversation.vision_camera import Camera
-from conversation import neuralnet_vision, configuration, vision_camera
+from conversation import neuralnet_vision_inference, configuration, vision_camera
 
 OSC_IP_ADDRESS = "0.0.0.0"
 OSC_PORT = 8005
@@ -24,20 +24,25 @@ TRAININGS_SET_PATH = "./data/trainingsset_dodeca.csv"
 
 SHOW_FRAMES = True  # show window frames
 
-CAMERA = Camera(224, 224)
+ZOOM_AREA_WIDTH = 480
+ZOOME_AREA_HEIGHT = 480
+
+CAMERA = Camera(224, 224, ZOOM_AREA_WIDTH, ZOOME_AREA_HEIGHT)
 
 trainingsset = []
 trainingsset_final = []
 
 stop_event = threading.Event()
 
-
 def get_frame():
     """
-    returns tuple with frame and name of file each in an array
+    returns tuple with frame andwar name of file each in an array
     """
     for frames in CAMERA:
         cv2_img, pil_img = frames
+        if SHOW_FRAMES:
+            vision_camera.cv2.imshow('frame', cv2_img)
+            key = vision_camera.cv2.waitKey(20)
         img_collection = [pil_img]
         names_of_file = ["test"]
         return img_collection, names_of_file, cv2_img
@@ -49,17 +54,13 @@ def process_trainingsset():
     512 dim vector based on the neural net and saves them together
     with the sound vector to the trainingsset_final list
     """
-    MODEL = neuralnet_vision.build_model()
-    MODEL.summary()
+    MODEL = neuralnet_vision_inference.InferenceModel()
     for set in trainingsset:
         soundvector = set[0]
         img_collection = set[1]
         names_of_file = set[2]
         cv2_img = set[3]
-        if SHOW_FRAMES:
-            vision_camera.cv2.imshow('frame', cv2_img)
-            key = vision_camera.cv2.waitKey(20)
-        activation_vectors, header, img_coll_bn = neuralnet_vision.get_activations(
+        activation_vectors, header, img_coll_bn = MODEL.get_activations(
             MODEL, img_collection, names_of_file)
         trainingsset_final.append((activation_vectors, soundvector))
     print("Finished processing trainings set")
@@ -129,17 +130,17 @@ def start_recording():
     dispatcher_server = dispatcher.Dispatcher()
     dispatcher_server.map("/record_sound_vector", record)
     dispatcher_server.map("/stop", osc_stop)
-    server = osc_server.ThreadingOSCUDPServer(
+    server = osc_server.BlockingOSCUDPServer(
         (OSC_IP_ADDRESS, OSC_PORT), dispatcher_server)
     print("Serving on {}".format(server.server_address))
-    threading.Thread(target=server.serve_forever, daemon=True).start()
+    #threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server
 
 
 if __name__ == "__main__":
-    start_recording()
+    server = start_recording()
+    server.serve_forever()
     signal.signal(signal.SIGINT, signal_handler)
-    print('Press Ctrl+C to save current data to disk.')
-    stop_event.wait()
     process_trainingsset()
     save_to_disk()
     sys.exit(0)
