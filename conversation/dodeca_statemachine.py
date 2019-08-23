@@ -8,6 +8,8 @@ import os
 from pythonosc import udp_client
 from conversation.vision_camera import Camera
 from conversation import neuralnet_vision, neuralnet_dictionary, configuration, vision_camera
+from conversation import neuralnet_vision_inference
+from conversation.neuralnet_vision_inference import InferenceModel
 import tensorflow as tf
 import tensorflow.contrib.tensorrt as trt
 from tensorflow.python.keras.preprocessing import image
@@ -39,8 +41,6 @@ PAUSE_LENGTH = 4  # length in frames of darkness that triggers pause event
 PAUSE_BRIGHTNESS_THRESH = 3.5
 PREDICTION_BUFFER_MAXLEN = 200  # 10 seconds * 44.1 fps
 
-TENSORRT_MODEL_PATH = "data/TensorRT_model.pb"
-
 CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
 
 ZOOM_AREA_WIDTH = 480
@@ -58,55 +58,18 @@ def load_graph(frozen_graph_filename):
         graph_def.ParseFromString(f.read())
     # Then, we import the graph_def into a new Graph and returns it
     with tf.Graph().as_default() as graph:
-        # The name var will prefix every op/nodes in your graph
+        # The name var wildictionary_model.h5l prefix every op/nodes in your graph
         # Since we load everything in a new graph, this is not needed
         tf.import_graph_def(graph_def, name="prefix")
     return graph, graph_def
 
 
-class InferenceModel():
-    """
-    This Model is used to run the tensorrt optimized graph
-    """
-
-    def __init__(self):
-        """
-        initialize and run session once to load environment
-        """
-        graph, graph_def = load_graph(TENSORRT_MODEL_PATH)
-        self.input_node = graph.get_tensor_by_name('prefix/input_1:0')
-        self.output_node = graph.get_tensor_by_name(
-            'prefix/sequential/global_average_pooling2d/Mean:0')
-        self.sess = tf.Session(graph=graph)
-        self.sess.run(
-            self.output_node, {
-                self.input_node: np.zeros(
-                    (1, 224, 224, 3))})
-
-    def predict(self, images):
-        """
-        returns a 512 dim vector using
-        """
-        res = []
-        for img in images:
-            arr = neuralnet_vision.image.img_to_array(img)
-            arr = neuralnet_vision.preprocess_input(arr)
-            res.append(arr)
-        return self.sess.run(self.output_node, {self.input_node: res})
-
-    def get_activations(self, model, img_collection, file_names):
-        """war
-        legacy for compatibility with neuralnet_vision
-        """
-        return self.predict(img_collection), None, None
-
-
-if os.path.isfile(TENSORRT_MODEL_PATH):
-    print("Using optimized inference. {} found!".format(TENSORRT_MODEL_PATH))
+if os.path.isfile(neuralnet_vision_inference.TENSORRT_MODEL_PATH):
+    print("Using optimized inference. {} found!".format(neuralnet_vision_inference.TENSORRT_MODEL_PATH))
     MODEL = InferenceModel()
     MODEL_GRAPH = None
 else:
-    print("Using unoptimized inference. {} not found!".format(TENSORRT_MODEL_PATH))
+    print("Using unoptimized inference. {} not found!".format(neuralnet_vision_inference.TENSORRT_MODEL_PATH))
     MODEL = neuralnet_vision
     MODEL_GRAPH = neuralnet_vision.build_model()
     MODEL_GRAPH.summary()
@@ -172,7 +135,7 @@ def clip_activation(activation):
 
 
 def process_key(key_input):
-    """war
+    """
     quit programm on 'q' and save current config on 's'
     """
     if key_input & 0xFF == ord('q'):
@@ -270,8 +233,7 @@ def play_buffer():
 
 
 def get_frame():
-    """import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+    """
     returns tuple with frame andwar name of file each in an array
     """
     for frames in CAMERA:
