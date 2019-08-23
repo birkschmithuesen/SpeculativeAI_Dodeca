@@ -80,14 +80,14 @@ def save_to_disk():
         # writer.writerow(fieldnames)
         for image_vector, sound_vector in trainingsset_final:
             row = list(image_vector[0])
-            row.extend(sound_vector)
+            row. blockingextend(sound_vector)
             writer.writerow(row)
         abspath = os.path.realpath(csv_file.name)
         print("\n\nWritten trainings set to {}".format(abspath))
 
 
 def record(address, *args):
-    """
+    """ blocking
     Records incoming 5dim audio vector consisting of float values
     """
     soundvector = args
@@ -99,14 +99,6 @@ def osc_stop(address, *args):
     """
     Callback osc dispatcher to stop recording
     """
-    stop_recording()
-
-
-def signal_handler(signal, frame):
-    """
-    Callback for signal to stop recording
-    """
-    print('You pressed Ctrl+C!')
     stop_recording()
 
 
@@ -140,7 +132,6 @@ def start_recording():
 if __name__ == "__main__":
     server = start_recording()
     server.serve_forever()
-    signal.signal(signal.SIGINT, signal_handler)
     process_trainingsset()
     save_to_disk()
     sys.exit(0)
