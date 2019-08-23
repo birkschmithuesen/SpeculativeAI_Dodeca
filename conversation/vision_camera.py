@@ -44,9 +44,16 @@ class Camera():
             cv2.CAP_PROP_FRAME_HEIGHT)
         self.video_capture.set(cv2.CAP_PROP_FPS, fps)
         self.video_capture.set(cv2.CAP_PROP_SETTINGS, 0)
+        self.video_capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25) #0.25 is off, 0.75 is on
+        self.video_capture.set(cv2.CAP_PROP_EXPOSURE, 0.5)
+        self.video_capture.set(cv2.CAP_PROP_BRIGHTNESS, 0.5)
         print("Initializing camera")
         print("actual_frame_width:" + str(self.actual_frame_width))
         print("actual_frame_height:" + str(self.actual_frame_height))
+        print("actual exposure:" + str(self.video_capture.get(cv2.CAP_PROP_EXPOSURE)))
+        print("actual brightness:" + str(self.video_capture.get(cv2.CAP_PROP_BRIGHTNESS)))
+
+
 
     def show_capture(self):
         """
