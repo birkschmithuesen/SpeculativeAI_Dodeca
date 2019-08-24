@@ -34,11 +34,11 @@ MESSAGE_RANDOMIZER_START = 0 # 0 - write the frame alays one time. 1 - write the
 MESSAGE_RANDOMIZER_END = 0
 
 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
-MINIMUM_MESSAGE_LENGTH  = 5 # ignore all messages below this length
+MINIMUM_MESSAGE_LENGTH  = 10 # ignore all messages below this length
 REPLAY_FPS_FACTOR = 1
-PAUSE_LENGTH = 4  # length in frames of darkness that triggers pause event
+PAUSE_LENGTH = 18  # length in frames of darkness that triggers pause event
 # Threshhold defining pause if frame brightness is below the value
-PAUSE_BRIGHTNESS_THRESH = 3.5
+PAUSE_BRIGHTNESS_THRESH = 2.8
 PREDICTION_BUFFER_MAXLEN = 200  # 10 seconds * 44.1 fps
 
 CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
@@ -81,28 +81,20 @@ class FPSCounter():
     """
 
     def __init__(self):
-        self.fps_sum = 0.0
-        self.counter = 0.0
         self.last_timestamp = False
 
-    def record_end_new_frame(self):
+    def record_end_new_frame(self, n_frames):
         time_now = time.time()
         if self.last_timestamp:
             time_delta = time_now - self.last_timestamp
-            self.fps_sum += 1.0 / time_delta
-            self.counter += 1
-        self.last_timestamp = time_now
+            self.fps_sum = time_delta
+        self.n_frames = n_frames
 
     def record_start_new_frame(self):
         self.last_timestamp = time.time()
 
     def get_average_fps(self):
-        if self.counter == 0:
-            return 0
-        average = self.fps_sum / self.counter
-        self.fps_sum = 0
-        self.counter = 0
-        return average
+        return self.n_frames / self.fps_sum
 
 
 def save_current_config():
@@ -308,26 +300,26 @@ class Waiting(State):
         if frame_contains_darkness:
             return DodecaStateMachine.waiting
         print("Transitioned: Recording")
+        fpscounter.record_start_new_frame()
         return DodecaStateMachine.recording
 
 
 class Recording(State):
     """
     Recording the image prediction frames and waiting for detecting a pause
-    to transition to replay statecimport os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+    to transition to replay statec
     """
 
     def run(self, image_frames):
         global prediction_counter
         global frames_to_remove
-        fpscounter.record_start_new_frame()
+        
         img_collection, names_of_file = image_frames
         activation_vectors, header, img_coll_bn = MODEL.get_activations(
             MODEL_GRAPH, img_collection, names_of_file)
         activation_vector = prediction_postprocessing(activation_vectors)
-        fpscounter.record_end_new_frame()
-        prediction_counter += 1
+        if len(prediction_buffer) < PREDICTION_BUFFER_MAXLEN:
+            prediction_counter += 1
         if LIVE_REPLAY:
             random_value = 0
         else:
@@ -353,13 +345,13 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
         _frame_contains_darkness, pause_detected = contains_darkness_pause_detected(
             image_frame)
         if pause_detected:
+            prediction_buffer_remove_pause()
             if prediction_counter < MINIMUM_MESSAGE_LENGTH:
                  print("Transitioned: Waiting")
-                 prediction_counter = frames_to_remove = 0
                  prediction_buffer.clear()
                  return DodecaStateMachine.waiting
             print("Transitioned: Replaying")
-            prediction_buffer_remove_pause()
+            fpscounter.record_end_new_frame(prediction_counter)
             prediction_counter = frames_to_remove = 0
             return DodecaStateMachine.replaying
         else:
