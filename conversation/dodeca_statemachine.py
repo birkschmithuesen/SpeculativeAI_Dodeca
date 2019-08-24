@@ -36,10 +36,11 @@ MESSAGE_RANDOMIZER_END = 0
 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
 MINIMUM_MESSAGE_LENGTH  = 10 # ignore all messages below this length
 REPLAY_FPS_FACTOR = 1
-PAUSE_LENGTH = 18  # length in frames of darkness that triggers pause event
+PAUSE_LENGTH = 20# length in frames of darkness that triggers pause event
 # Threshhold defining pause if frame brightness is below the value
 PAUSE_BRIGHTNESS_THRESH = 2.8
-PREDICTION_BUFFER_MAXLEN = 200  # 10 seconds * 44.1 fps
+
+PREDICTION_BUFFER_MAXLEN = 200# 10 seconds * 20 fps
 
 CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
 
@@ -77,7 +78,7 @@ else:
 
 class FPSCounter():
     """
-    This class tracks average fpshttps://docs.opencv.org/3.4.0/da/d54/group__imgproc__transform.html#ga47a974309e9102f5f08231edc7e7529d
+    This class tracks average fps
     """
 
     def __init__(self):
@@ -282,8 +283,6 @@ class StateMachine:
         img_collection, names_of_file, cv2_img = get_frame()
         self.currentState = self.currentState.next(cv2_img)
         self.currentState.run((img_collection, names_of_file))
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 class Waiting(State):
     """
@@ -302,7 +301,6 @@ class Waiting(State):
         print("Transitioned: Recording")
         fpscounter.record_start_new_frame()
         return DodecaStateMachine.recording
-
 
 class Recording(State):
     """
@@ -349,6 +347,7 @@ class Recording(State):
             if prediction_counter < MINIMUM_MESSAGE_LENGTH:
                  print("Transitioned: Waiting")
                  prediction_buffer.clear()
+                 prediction_counter = frames_to_remove = 0
                  return DodecaStateMachine.waiting
             print("Transitioned: Replaying")
             fpscounter.record_end_new_frame(prediction_counter)
