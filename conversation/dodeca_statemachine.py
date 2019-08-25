@@ -31,7 +31,7 @@ SHOW_FRAMES = True  # show window frames
 # these set tha random range for inserting/removing predictions
 # N times into the prediction buffer
 MESSAGE_RANDOMIZER_START = 0 # 0 - write the frame alays one time. 1 - write the message -1 till 2 times into the buffer
-MESSAGE_RANDOMIZER_END = 0
+MESSAGE_RANDOMIZER_END = 5
 
 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
 MINIMUM_MESSAGE_LENGTH  = 10 # ignore all messages below this length
@@ -206,7 +206,6 @@ def prediction_buffer_remove_pause():
         return
     while(prediction_buffer[-1][1] > last_frame_counter):
         prediction_buffer.pop()
-        prediction_counter -= 1
         if len(prediction_buffer) == 0:
            return
 
