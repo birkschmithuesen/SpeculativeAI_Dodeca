@@ -21,7 +21,7 @@ SLIDING_WINDOW_SIZE = 50  # number of frames in sliding window
 # True: transform from 512 to 5 using PCA. Otherwise, use neural net
 TRANSFORM_USING_NEURAL_NET = True
 
-OSC_IP_ADDRESS = "2.0.0.2"
+OSC_IP_ADDRESS = "127.0.0.1"
 OSC_PORT = 57120
 CONFIG_PATH = "./data/conversation_config"
 PCA_PATH = './data/pca.joblib'
@@ -36,11 +36,12 @@ MESSAGE_RANDOMIZER_END = 0
 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
 MINIMUM_MESSAGE_LENGTH  = 10 # ignore all messages below this length
 REPLAY_FPS_FACTOR = 1
-PAUSE_LENGTH = 20# length in frames of darkness that triggers pause event
+PAUSE_LENGTH = 20 # length in frames of darkness that triggers pause event
 # Threshhold defining pause if frame brightness is below the value
-PAUSE_BRIGHTNESS_THRESH = 2.8
+PAUSE_BRIGHTNESS_THRESH = 20 #this is the threshold for each pixel to be counted
+PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH = 50 # this is the threshold for the number of counted pixels
 
-PREDICTION_BUFFER_MAXLEN = 200# 10 seconds * 20 fps
+PREDICTION_BUFFER_MAXLEN = 200 # 10 seconds * 20 fps
 
 CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
 
@@ -59,7 +60,7 @@ def load_graph(frozen_graph_filename):
         graph_def.ParseFromString(f.read())
     # Then, we import the graph_def into a new Graph and returns it
     with tf.Graph().as_default() as graph:
-        # The name var wildictionary_model.h5l prefix every op/nodes in your graph
+        # The name var wildictionary_moprediction_buffer_remove_pausedel.h5l prefix every op/nodes in your graph
         # Since we load everything in a new graph, this is not needed
         tf.import_graph_def(graph_def, name="prefix")
     return graph, graph_def
@@ -83,16 +84,17 @@ class FPSCounter():
 
     def __init__(self):
         self.last_timestamp = False
-
+        self.end_timestamp = False
     def record_end_new_frame(self, n_frames):
-        time_now = time.time()
-        if self.last_timestamp:
+        if self.last_timestamp and not self.end_timestamp:
+            time_now = time.time()
             time_delta = time_now - self.last_timestamp
             self.fps_sum = time_delta
-        self.n_frames = n_frames
+            self.n_frames = n_frames
 
     def record_start_new_frame(self):
         self.last_timestamp = time.time()
+        self.end_timestamp = False
 
     def get_average_fps(self):
         return self.n_frames / self.fps_sum
@@ -163,14 +165,14 @@ def reduce_to_5dim(activations):
 def contains_darkness(image_frame):
     """
     Return true if average frame brightness is
-    below PAUSE_BRIGHTNESfrom tensorflow.python.util import deprecation
-deprecation._PRINT_DEPRECATION_WARNINGS = FalseS_THRESH
+    below PAUSE_BRIGHTNESS_THRESH
     """
     image = np.zeros((224, 224, 3), np.uint8)
     cv2.cvtColor(image_frame, cv2.COLOR_RGB2HSV, image)
-    brightness = np.mean(image[:, :, 2])
-    print("Brightness: {}\n".format(brightness))
-    return brightness < PAUSE_BRIGHTNESS_THRESH
+    brightnessvalues = image[:, :, 2]
+    counter = np.sum(brightnessvalues > PAUSE_BRIGHTNESS_THRESH)
+    print("Pixels above threshold: {}\n".format(counter))
+    return counter < PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH
 
 
 def contains_darkness_pause_detected(image_frame):
@@ -198,7 +200,7 @@ def prediction_buffer_remove_pause():
     prediction_buffer
     """
     global prediction_counter
-    # -1 because the last pause frame wrecordon't be recorded in state machine
+    # -1 prediction_buffer_remove_pausebecause the last pause frame wrecordon't be recorded in state machine
     last_frame_counter = prediction_counter - (PAUSE_LENGTH - 1)
     if len(prediction_buffer) == 0:
         return
@@ -268,7 +270,7 @@ def prediction_postprocessing(activation_vectors):
 
 class State:
     def run(self):
-        assert 0, "run not implemented"
+        assert 0, "rfpscounter.record_start_new_frameun not implemented"
 
     def next(self, input):
         assert 0, "next not implemented"
@@ -316,8 +318,7 @@ class Recording(State):
         activation_vectors, header, img_coll_bn = MODEL.get_activations(
             MODEL_GRAPH, img_collection, names_of_file)
         activation_vector = prediction_postprocessing(activation_vectors)
-        if len(prediction_buffer) < PREDICTION_BUFFER_MAXLEN:
-            prediction_counter += 1
+        prediction_counter += 1
         if LIVE_REPLAY:
             random_value = 0
         else:
@@ -342,18 +343,28 @@ class Recording(State):
         global prediction_counter
         _frame_contains_darkness, pause_detected = contains_darkness_pause_detected(
             image_frame)
+        print("Prediction Counter: ")
+        print(prediction_counter)
+        print("len(prediction_buffer): ")
+        print(len(prediction_buffer))
         if pause_detected:
             prediction_buffer_remove_pause()
-            if prediction_counter < MINIMUM_MESSAGE_LENGTH:
+            print("Prediction Counter: ")
+            print(prediction_counter)
+            print("len(prediction_buffer): ")
+            print(len(prediction_buffer))
+            fpscounter.record_end_new_frame(prediction_counter)
+            if len(prediction_buffer) < MINIMUM_MESSAGE_LENGTH:
                  print("Transitioned: Waiting")
                  prediction_buffer.clear()
                  prediction_counter = frames_to_remove = 0
                  return DodecaStateMachine.waiting
             print("Transitioned: Replaying")
-            fpscounter.record_end_new_frame(prediction_counter)
             prediction_counter = frames_to_remove = 0
             return DodecaStateMachine.replaying
         else:
+            if len(prediction_buffer) == PREDICTION_BUFFER_MAXLEN:
+                fpscounter.record_end_new_frame(PREDICTION_BUFFER_MAXLEN)
             return DodecaStateMachine.recording
 
 
