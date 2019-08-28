@@ -32,6 +32,8 @@ SHOW_FRAMES = True  # show window frames
 # N times into the prediction buffer
 MESSAGE_RANDOMIZER_START = 0 # 0 - write the frame alays one time. 1 - write the message -1 till 2 times into the buffer
 MESSAGE_RANDOMIZER_END = 5
+VOLUME_RANDOMIZER_START = 0 # set the minimum value, how much the volume of the different synths will be changed by chance
+VOLUME_RANDOMIZER_END = 0.2 # set the maximum value, how much the volume of the different synths will be changed by chance
 
 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
 MINIMUM_MESSAGE_LENGTH  = 10 # ignore all messages below this length
@@ -266,6 +268,14 @@ def prediction_postprocessing(activation_vectors):
     activation_vector = activations_5dim[-1]
     return clip_activation(activation_vector)
 
+def soundvector_postprocessing(prediction_vector):
+    """
+    adds some random noise or any other function to the sound vector,
+    to add purpose to the answer
+    """
+    prediction_vector[0] = prediction_vector[0] + random.uniform(VOLUME_RANDOMIZER_START, VOLUME_RANDOMIZER_END)
+    prediction_vector[6] = prediction_vector[6] + random.uniform(VOLUME_RANDOMIZER_START, VOLUME_RANDOMIZER_END)
+    return prediction_vector
 
 class State:
     def run(self):
@@ -312,11 +322,12 @@ class Recording(State):
     def run(self, image_frames):
         global prediction_counter
         global frames_to_remove
-        
+
         img_collection, names_of_file = image_frames
         activation_vectors, header, img_coll_bn = MODEL.get_activations(
             MODEL_GRAPH, img_collection, names_of_file)
         activation_vector = prediction_postprocessing(activation_vectors)
+        activation_vector = soundvector_postprocessing(activation_vector)
         prediction_counter += 1
         if LIVE_REPLAY:
             random_value = 0
