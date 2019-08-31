@@ -1,5 +1,8 @@
-
 (
+Server.local.waitForBoot({
+
+
+
 var bassDrone_intern_vol = 1;
 var bassDrone_vol = Bus.control(s, 1);
 var bassDrone_bw = Bus.control(s, 1);
@@ -28,6 +31,8 @@ var global_decay = 0.5;
 
 var oscOutForTraining = NetAddr.new("2.0.0.3", 8005);
 var trainingsData = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+
+
 
 ///////////////////////////////////////////////////////////
 //   OSC
@@ -596,16 +601,6 @@ s.waitForBoot({
 }.play;  // Use ".freqscope" or ".scope", both are illustrative.
 )
 
+});
 
 )
-
-
-a.set(\reverb_room, 30);
-a.set(\reverb_room, 0.1);
-
-a.set(\reverb_mix, 0.5);
-
-a.set(\reverb_damp, 0.5);
-
-~synths.do(_.set(\freq, 50));
-
