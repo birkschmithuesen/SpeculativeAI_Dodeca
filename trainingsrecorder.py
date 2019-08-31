@@ -80,7 +80,7 @@ def save_to_disk():
         # writer.writerow(fieldnames)
         for image_vector, sound_vector in trainingsset_final:
             row = list(image_vector[0])
-            row. blockingextend(sound_vector)
+            row.extend(sound_vector)
             writer.writerow(row)
         abspath = os.path.realpath(csv_file.name)
         print("\n\nWritten trainings set to {}".format(abspath))
