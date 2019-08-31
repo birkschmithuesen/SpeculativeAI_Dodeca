@@ -47,8 +47,8 @@ PREDICTION_BUFFER_MAXLEN = 44 # 4 seconds * 11 fps
 
 CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
 
-ZOOM_AREA_WIDTH = 480
-ZOOME_AREA_HEIGHT = 480
+ZOOM_AREA_WIDTH = 380 #480 is full sensor width
+ZOOME_AREA_HEIGHT = 380 #480 is full sensor width
 
 CAMERA = Camera(224, 224, ZOOM_AREA_WIDTH, ZOOME_AREA_HEIGHT)
 
@@ -268,7 +268,6 @@ def prediction_postprocessing(activation_vectors):
     activation_vector = activations_5dim[-1]
     return clip_activation(activation_vector)
 
-<<<<<<< HEAD
 def soundvector_postprocessing(prediction_vector):
     """
     adds some random noise or any other function to the sound vector,
@@ -277,8 +276,6 @@ def soundvector_postprocessing(prediction_vector):
     prediction_vector[0] = np.clip(prediction_vector[0] + random.uniform(VOLUME_RANDOMIZER_START, VOLUME_RANDOMIZER_END), 0, 1)
     prediction_vector[6] = np.clip(prediction_vector[6] + random.uniform(VOLUME_RANDOMIZER_START, VOLUME_RANDOMIZER_END), 0, 1)
     return prediction_vector
-=======
->>>>>>> 08f9468428e191971c913133f867fc204eca8eb1
 
 class State:
     def run(self):
@@ -330,6 +327,7 @@ class Recording(State):
         activation_vectors, header, img_coll_bn = MODEL.get_activations(
             MODEL_GRAPH, img_collection, names_of_file)
         activation_vector = prediction_postprocessing(activation_vectors)
+        activation_vector = soundvector_postprocessing(activation_vector)
         prediction_counter += 1
         if LIVE_REPLAY:
             random_value = 0
