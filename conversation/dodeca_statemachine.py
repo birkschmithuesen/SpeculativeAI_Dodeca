@@ -322,6 +322,7 @@ class Recording(State):
     def run(self, image_frames):
         global prediction_counter
         global frames_to_remove
+        global should_increase_length
         
         img_collection, names_of_file = image_frames
         activation_vectors, header, img_coll_bn = MODEL.get_activations(
@@ -334,10 +335,11 @@ class Recording(State):
         else:
             random_value = random.randint(
                 MESSAGE_RANDOMIZER_START, MESSAGE_RANDOMIZER_END)
-            should_increase_length = random.randint(
-                0, 1)
+            should_increase_length = should_increase_length + random.uniform(-1, 1)
+            should_increase_length = np.clip(should_increase_length, -5, 5)
+        print("should increase length", should_increase_length)        
         prediction_buffer.append((activation_vector, prediction_counter))
-        if should_increase_length:
+        if should_increase_length>0:
             for i in range(random_value):
                 prediction_buffer.append((activation_vector, prediction_counter))
         else:
@@ -410,10 +412,12 @@ pause_counter = 0
 prediction_counter = 0
 frames_to_remove = 0
 fpscounter = FPSCounter()
+should_increase_length = 0
 
 DodecaStateMachine.waiting = Waiting()
 DodecaStateMachine.recording = Recording()
 DodecaStateMachine.replaying = Replaying()
+
 
 if LIVE_REPLAY:
     def new_next_recording(image_frame):
