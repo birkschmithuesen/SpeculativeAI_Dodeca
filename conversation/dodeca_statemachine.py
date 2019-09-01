@@ -31,19 +31,19 @@ SHOW_FRAMES = True  # show window frames
 # these set tha random range for inserting/removing predictions
 # N times into the prediction buffer
 MESSAGE_RANDOMIZER_START = 0 # 0 - write the frame alays one time. 1 - write the message -1 till 2 times into the buffer
-MESSAGE_RANDOMIZER_END = 5
-VOLUME_RANDOMIZER_START = -0.4 # set the minimum value, how much the volume of the different synths will be changed by chance
-VOLUME_RANDOMIZER_END = 0.4 # set the maximum value, how much the volume of the different synths will be changed by chance
+MESSAGE_RANDOMIZER_END = 0
+VOLUME_RANDOMIZER_START = 0 # set the minimum value, how much the volume of the different synths will be changed by chance
+VOLUME_RANDOMIZER_END = 0 # set the maximum value, how much the volume of the different synths will be changed by chance
 
 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
 MINIMUM_MESSAGE_LENGTH  = 10 # ignore all messages below this length
-REPLAY_FPS_FACTOR = 1
+REPLAY_FPS_FACTOR = 1.5
 PAUSE_LENGTH = 10 # length in frames of darkness that triggers pause event
 # Threshhold defining pause if frame brightness is below the value
 PAUSE_BRIGHTNESS_THRESH = 20 #this is the threshold for each pixel to be counted
 PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH = 20 # this is the threshold for the number of counted pixels. Default is 50 for low ambient rooms
 
-PREDICTION_BUFFER_MAXLEN = 44 # 4 seconds * 11 fps
+PREDICTION_BUFFER_MAXLEN = 128 # 4 seconds * 11 fps
 
 CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
 
