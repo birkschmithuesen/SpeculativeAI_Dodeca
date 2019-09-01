@@ -31,7 +31,7 @@ SHOW_FRAMES = True  # show window frames
 # these set tha random range for inserting/removing predictions
 # N times into the prediction buffer
 MESSAGE_RANDOMIZER_START = 0 # 0 - write the frame alays one time. 1 - write the message -1 till 2 times into the buffer
-MESSAGE_RANDOMIZER_END = 0
+MESSAGE_RANDOMIZER_END = 1
 VOLUME_RANDOMIZER_START = 0 # set the minimum value, how much the volume of the different synths will be changed by chance
 VOLUME_RANDOMIZER_END = 0 # set the maximum value, how much the volume of the different synths will be changed by chance
 
@@ -341,7 +341,7 @@ class Recording(State):
             for i in range(random_value):
                 prediction_buffer.append((activation_vector, prediction_counter))
         else:
-            frames_to_remove += random_value - 1
+            frames_to_remove += random_value
         while(frames_to_remove > 0):
                  if len(prediction_buffer) > MINIMUM_MESSAGE_LENGTH:
                      prediction_buffer.pop()
