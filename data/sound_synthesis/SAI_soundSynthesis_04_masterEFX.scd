@@ -25,8 +25,8 @@ var mixer_midDrone = 1;
 var mixer_lead = 1;
 var initializeSynth = 30;
 
-var global_lag = 3;
-var vol_lag = 0.1;
+var global_lag = 2;
+var vol_lag = 0.6;
 var global_decay = 0.5;
 
 var oscOutForTraining = NetAddr.new("2.0.0.3", 8005);
