@@ -36,7 +36,7 @@ VOLUME_RANDOMIZER_START = 0 # set the minimum value, how much the volume of the 
 VOLUME_RANDOMIZER_END = 0 # set the maximum value, how much the volume of the different synths will be changed by chance
 
 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
-MINIMUM_MESSAGE_LENGTH  = 10 # ignore all messages below this length
+MINIMUM_MESSAGE_LENGTH  = 4 # ignore all messages below this length
 REPLAY_FPS_FACTOR = 1.5
 PAUSE_LENGTH = 10 # length in frames of darkness that triggers pause event
 # Threshhold defining pause if frame brightness is below the value
