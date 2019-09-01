@@ -32,8 +32,10 @@ SHOW_FRAMES = True  # show window frames
 # N times into the prediction buffer
 MESSAGE_RANDOMIZER_START = 0 # 0 - write the frame alays one time. 1 - write the message -1 till 2 times into the buffer
 MESSAGE_RANDOMIZER_END = 1
-VOLUME_RANDOMIZER_START = 0 # set the minimum value, how much the volume of the different synths will be changed by chance
-VOLUME_RANDOMIZER_END = 0 # set the maximum value, how much the volume of the different synths will be changed by chance
+SOUND_RANDOMIZER_START = -0.05 # set the minimum value, how much the volume of the different synths will be changed by chance
+SOUND_RANDOMIZER_END = 0.05 # set the maximum value, how much the volume of the different synths will be changed by chance
+SOUND_RANDOMIZER_MIN = -0.1
+SOUND_RANDOMIZER_MAX = 0.1
 
 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
 MINIMUM_MESSAGE_LENGTH  = 4 # ignore all messages below this length
@@ -273,8 +275,11 @@ def soundvector_postprocessing(prediction_vector):
     adds some random noise or any other function to the sound vector,
     to add purpose to the answer
     """
-    prediction_vector[0] = np.clip(prediction_vector[0] + random.uniform(VOLUME_RANDOMIZER_START, VOLUME_RANDOMIZER_END), 0, 1)
-    prediction_vector[6] = np.clip(prediction_vector[6] + random.uniform(VOLUME_RANDOMIZER_START, VOLUME_RANDOMIZER_END), 0, 1)
+    for i in range (0, len(prediction_vector)):
+        soundvector_purpose[i] = np.clip(soundvector_purpose[i] + random.uniform(SOUND_RANDOMIZER_START, SOUND_RANDOMIZER_END), SOUND_RANDOMIZER_MIN, SOUND_RANDOMIZER_MAX)
+    prediction_vector = np.clip(prediction_vector + soundvector_purpose, 0, 1)
+    #prediction_vector[0] = np.clip(prediction_vector[0] + random.uniform(VOLUME_RANDOMIZER_START, VOLUME_RANDOMIZER_END), 0, 1)
+    #prediction_vector[6] = np.clip(prediction_vector[6] + random.uniform(VOLUME_RANDOMIZER_START, VOLUME_RANDOMIZER_END), 0, 1)
     return prediction_vector
 
 class State:
@@ -413,6 +418,7 @@ prediction_counter = 0
 frames_to_remove = 0
 fpscounter = FPSCounter()
 should_increase_length = 0
+soundvector_purpose = np.zeros(shape=(8))
 
 DodecaStateMachine.waiting = Waiting()
 DodecaStateMachine.recording = Recording()
