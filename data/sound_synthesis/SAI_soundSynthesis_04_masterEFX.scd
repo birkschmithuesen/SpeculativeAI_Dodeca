@@ -25,9 +25,9 @@ var mixer_midDrone = 1;
 var mixer_lead = 1;
 var initializeSynth = 30;
 
-var global_lag = 2;
-var vol_lag = 0.6;
-var global_decay = 0.5;
+var global_lag = 0.5; //2;
+var vol_lag = 0.1;
+var global_decay = 0.1;
 
 var oscOutForTraining = NetAddr.new("2.0.0.3", 8005);
 var trainingsData = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
@@ -183,6 +183,16 @@ OSCdef("sound",
 		midDrone_freq.set(msg[6]);
 		lead_vol.set(msg[7]);
 		lead_pitch.set(msg[8]);
+			//Here comes a very stupid workaround to set the twop Oscilators to different frequencies. I don't know how to do it within in the initialization process.
+		if (initializeSynth > 0){
+			initializeSynth = initializeSynth - 1;
+		};
+		if (initializeSynth == 1) {
+		(
+			~synths_mid[0].set(\freq, 440);
+			~synths_mid[1].set(\freq, 655, \amp, 0.2);
+		)
+		};
 	}, "sound"
 );
 
@@ -193,8 +203,9 @@ EnvGen
 (a = {
 	arg t_env, reverb_mix = 0.33, reverb_room = 0.5, reverb_damp = 0.5;
 	var env = Env.new([1,1,0], [0.1,global_decay]).ar(0, t_env); //[0.5 -> hold time (max dur between osc msgs), 1 -> release time]
-			var result = Mix.ar([In.ar(bus_bassDrone)*In.kr(bassDrone_vol).lag(vol_lag), In.ar(bus_midDrone)*In.kr(midDrone_vol).lag(vol_lag), In.ar(bus_lead)*In.kr(lead_vol).lag(vol_lag)])*env;
+			var result = Mix.ar([In.ar(bus_bassDrone)*In.kr(bassDrone_vol).lag(vol_lag)*1.4, In.ar(bus_midDrone)*In.kr(midDrone_vol).lag(vol_lag)*0.45, In.ar(bus_lead)*In.kr(lead_vol).lag(vol_lag)*1.8])*env;
 	result = FreeVerb.ar(result, mix: reverb_mix, room: reverb_room, damp: reverb_damp, mul: 3.0).distort;
+//	result = Compander.ar(result, control: result, thresh: 0.3, slopeBelow: 0.95, slopeAbove: 0.1, clampTime: 0.005, relaxTime: 0.05);
 
 	Splay.ar(result);
 }.play;
