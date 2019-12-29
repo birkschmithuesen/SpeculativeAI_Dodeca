@@ -2,10 +2,17 @@
 This module contains objects needed to capture camera frames, send osc output and further
 functionality needed for https://github.com/birkschmithuesen/SpeculativeArtificialIntelligence .
 """
+import os
 import platform
 import cv2
 from PIL import Image
 
+def tx2_usb_reset():
+    """
+    reset all usb ports on Jetson Tx2 (power off/on)
+    """
+    for usb_port in ["", ""]:
+        os.system("usbreset /dev/bus/usb/{}".format(usb_port))
 
 class Camera():
     """
@@ -28,12 +35,7 @@ class Camera():
         self.frame_section_width = frame_section_width
         self.frame_section_height = frame_section_height
         id = 1
-        if any(platform.win32_ver()):
-            self.video_capture = cv2.VideoCapture(id + cv2.CAP_DSHOW)
-        else:
-            self.video_capture = cv2.VideoCapture(id)
-        if not self.video_capture.isOpened():
-            raise Exception("Could not open video device")
+        self.get_video_capture()
         # Set properties. Each returns === True on success (i.e. correct
         # resolution)
         #self.video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, frame_section_width)
@@ -53,7 +55,13 @@ class Camera():
         print("actual exposure:" + str(self.video_capture.get(cv2.CAP_PROP_EXPOSURE)))
         print("actual brightness:" + str(self.video_capture.get(cv2.CAP_PROP_BRIGHTNESS)))
 
-
+    def get_video_capture(self):
+        if any(platform.win32_ver()):
+            self.video_capture = cv2.VideoCapture(id + cv2.CAP_DSHOW)
+        else:
+            self.video_capture = cv2.VideoCapture(id)
+        if not self.video_capture.isOpened():
+            raise Exception("Could not open video device")
 
     def show_capture(self):
         """
@@ -88,6 +96,21 @@ class Camera():
         """
         self.video_capture.release()
 
+    def restart(self):
+        """
+        Restart the camera and if that doesn't work reset the usb port
+        """
+        if hasattr(self, "restarted"):
+            print("Resetting USB port")
+            tx2_usb_reset()
+        self.release()
+        try:
+            self.get_video_capture()
+        except Exception as e:
+            print(e)
+
+        self.restarted = True
+
     def __iter__(self):
         return self
 
@@ -97,6 +120,9 @@ class Camera():
         :return: Tupel consisting of next opencv frame and python image library frame
         """
         ret, frame = self.video_capture.read()
+        if not frame:
+            self.restart()
+            raise Exception("Video device connection broke")
         frame = self.crop_frame(frame)
         cv2_im = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         pil_im = Image.fromarray(cv2_im)
