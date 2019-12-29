@@ -34,7 +34,6 @@ class Camera():
         self.frame_height = frame_height
         self.frame_section_width = frame_section_width
         self.frame_section_height = frame_section_height
-        id = 1
         self.get_video_capture()
         # Set properties. Each returns === True on success (i.e. correct
         # resolution)
@@ -56,6 +55,7 @@ class Camera():
         print("actual brightness:" + str(self.video_capture.get(cv2.CAP_PROP_BRIGHTNESS)))
 
     def get_video_capture(self):
+        id = 1
         if any(platform.win32_ver()):
             self.video_capture = cv2.VideoCapture(id + cv2.CAP_DSHOW)
         else:
