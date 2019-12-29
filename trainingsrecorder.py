@@ -24,10 +24,12 @@ TRAININGS_SET_PATH = "./data/trainingsset_dodeca.csv"
 
 SHOW_FRAMES = True  # show window frames
 
-ZOOM_AREA_WIDTH = 480
-ZOOME_AREA_HEIGHT = 480
+ZOOM_AREA_WIDTH = 380
+ZOOME_AREA_HEIGHT = 380
 
 CAMERA = Camera(224, 224, ZOOM_AREA_WIDTH, ZOOME_AREA_HEIGHT)
+
+MODEL = neuralnet_vision_inference.InferenceModel()
 
 trainingsset = []
 trainingsset_final = []
@@ -54,7 +56,7 @@ def process_trainingsset():
     512 dim vector based on the neural net and saves them together
     with the sound vector to the trainingsset_final list
     """
-    MODEL = neuralnet_vision_inference.InferenceModel()
+   # ->moved to line 31 MODEL = neuralnet_vision_inference.InferenceModel()
     for set in trainingsset:
         soundvector = set[0]
         img_collection = set[1]
@@ -80,7 +82,7 @@ def save_to_disk():
         # writer.writerow(fieldnames)
         for image_vector, sound_vector in trainingsset_final:
             row = list(image_vector[0])
-            row. blockingextend(sound_vector)
+            row.extend(sound_vector)
             writer.writerow(row)
         abspath = os.path.realpath(csv_file.name)
         print("\n\nWritten trainings set to {}".format(abspath))
@@ -99,6 +101,7 @@ def osc_stop(address, *args):
     """
     Callback osc dispatcher to stop recording
     """
+    print("received /stop")
     stop_recording()
 
 

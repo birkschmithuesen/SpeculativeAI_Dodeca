@@ -21,7 +21,7 @@ SLIDING_WINDOW_SIZE = 50  # number of frames in sliding window
 # True: transform from 512 to 5 using PCA. Otherwise, use neural net
 TRANSFORM_USING_NEURAL_NET = True
 
-OSC_IP_ADDRESS = "2.0.0.2"
+OSC_IP_ADDRESS = "127.0.0.1"
 OSC_PORT = 57120
 CONFIG_PATH = "./data/conversation_config"
 PCA_PATH = './data/pca.joblib'
@@ -31,20 +31,26 @@ SHOW_FRAMES = True  # show window frames
 # these set tha random range for inserting/removing predictions
 # N times into the prediction buffer
 MESSAGE_RANDOMIZER_START = 0 # 0 - write the frame alays one time. 1 - write the message -1 till 2 times into the buffer
-MESSAGE_RANDOMIZER_END = 0
+MESSAGE_RANDOMIZER_END = 1
+SOUND_RANDOMIZER_START = -0.05 # set the minimum value, how much the volume of the different synths will be changed by chance
+SOUND_RANDOMIZER_END = 0.05 # set the maximum value, how much the volume of the different synths will be changed by chance
+SOUND_RANDOMIZER_MIN = -0.2
+SOUND_RANDOMIZER_MAX = 0.2
 
 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
-MINIMUM_MESSAGE_LENGTH  = 5 # ignore all messages below this length
+MINIMUM_MESSAGE_LENGTH  = 4 # ignore all messages below this length
 REPLAY_FPS_FACTOR = 1
-PAUSE_LENGTH = 4  # length in frames of darkness that triggers pause event
+PAUSE_LENGTH = 9 # length in frames of darkness that triggers pause event
 # Threshhold defining pause if frame brightness is below the value
-PAUSE_BRIGHTNESS_THRESH = 3.5
-PREDICTION_BUFFER_MAXLEN = 200  # 10 seconds * 44.1 fps
+PAUSE_BRIGHTNESS_THRESH = 20 #this is the threshold for each pixel to be counted
+PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH = 700 # this is the threshold for the number of counted pixels. Default is 50 for low ambient rooms
+
+PREDICTION_BUFFER_MAXLEN = 128 # 4 seconds * 11 fps
 
 CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
 
-ZOOM_AREA_WIDTH = 480
-ZOOME_AREA_HEIGHT = 480
+ZOOM_AREA_WIDTH = 420 #480 is full sensor width
+ZOOME_AREA_HEIGHT = 420 #480 is full sensor width
 
 CAMERA = Camera(224, 224, ZOOM_AREA_WIDTH, ZOOME_AREA_HEIGHT)
 
@@ -58,7 +64,7 @@ def load_graph(frozen_graph_filename):
         graph_def.ParseFromString(f.read())
     # Then, we import the graph_def into a new Graph and returns it
     with tf.Graph().as_default() as graph:
-        # The name var wildictionary_model.h5l prefix every op/nodes in your graph
+        # The name var wildictionary_moprediction_buffer_remove_pausedel.h5l prefix every op/nodes in your graph
         # Since we load everything in a new graph, this is not needed
         tf.import_graph_def(graph_def, name="prefix")
     return graph, graph_def
@@ -77,32 +83,25 @@ else:
 
 class FPSCounter():
     """
-    This class tracks average fpshttps://docs.opencv.org/3.4.0/da/d54/group__imgproc__transform.html#ga47a974309e9102f5f08231edc7e7529d
+    This class tracks average fps
     """
 
     def __init__(self):
-        self.fps_sum = 0.0
-        self.counter = 0.0
         self.last_timestamp = False
-
-    def record_end_new_frame(self):
-        time_now = time.time()
-        if self.last_timestamp:
+        self.end_timestamp = False
+    def record_end_new_frame(self, n_frames):
+        if self.last_timestamp and not self.end_timestamp:
+            time_now = time.time()
             time_delta = time_now - self.last_timestamp
-            self.fps_sum += 1.0 / time_delta
-            self.counter += 1
-        self.last_timestamp = time_now
+            self.fps_sum = time_delta
+            self.n_frames = n_frames
 
     def record_start_new_frame(self):
         self.last_timestamp = time.time()
+        self.end_timestamp = False
 
     def get_average_fps(self):
-        if self.counter == 0:
-            return 0
-        average = self.fps_sum / self.counter
-        self.fps_sum = 0
-        self.counter = 0
-        return average
+        return self.n_frames / self.fps_sum
 
 
 def save_current_config():
@@ -170,14 +169,14 @@ def reduce_to_5dim(activations):
 def contains_darkness(image_frame):
     """
     Return true if average frame brightness is
-    below PAUSE_BRIGHTNESfrom tensorflow.python.util import deprecation
-deprecation._PRINT_DEPRECATION_WARNINGS = FalseS_THRESH
+    below PAUSE_BRIGHTNESS_THRESH
     """
     image = np.zeros((224, 224, 3), np.uint8)
     cv2.cvtColor(image_frame, cv2.COLOR_RGB2HSV, image)
-    brightness = np.mean(image[:, :, 2])
-    print("Brightness: {}\n".format(brightness))
-    return brightness < PAUSE_BRIGHTNESS_THRESH
+    brightnessvalues = image[:, :, 2]
+    counter = np.sum(brightnessvalues > PAUSE_BRIGHTNESS_THRESH)
+    print("Pixels above threshold: {}\n".format(counter))
+    return counter < PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH
 
 
 def contains_darkness_pause_detected(image_frame):
@@ -205,13 +204,12 @@ def prediction_buffer_remove_pause():
     prediction_buffer
     """
     global prediction_counter
-    # -1 because the last pause frame wrecordon't be recorded in state machine
+    # -1 prediction_buffer_remove_pausebecause the last pause frame wrecordon't be recorded in state machine
     last_frame_counter = prediction_counter - (PAUSE_LENGTH - 1)
     if len(prediction_buffer) == 0:
         return
     while(prediction_buffer[-1][1] > last_frame_counter):
         prediction_buffer.pop()
-        prediction_counter -= 1
         if len(prediction_buffer) == 0:
            return
 
@@ -272,10 +270,22 @@ def prediction_postprocessing(activation_vectors):
     activation_vector = activations_5dim[-1]
     return clip_activation(activation_vector)
 
+def soundvector_postprocessing(prediction_vector):
+    """
+    adds some random noise or any other function to the sound vector,
+    to add purpose to the answer
+    """
+    for i in range (0, len(prediction_vector)):
+        soundvector_purpose[i] = np.clip(soundvector_purpose[i] + random.uniform(SOUND_RANDOMIZER_START, SOUND_RANDOMIZER_END), SOUND_RANDOMIZER_MIN, SOUND_RANDOMIZER_MAX)
+    print(soundvector_purpose)
+    prediction_vector = np.clip(prediction_vector + soundvector_purpose, 0, 1)
+    #prediction_vector[0] = np.clip(prediction_vector[0] + random.uniform(VOLUME_RANDOMIZER_START, VOLUME_RANDOMIZER_END), 0, 1)
+    #prediction_vector[6] = np.clip(prediction_vector[6] + random.uniform(VOLUME_RANDOMIZER_START, VOLUME_RANDOMIZER_END), 0, 1)
+    return prediction_vector
 
 class State:
     def run(self):
-        assert 0, "run not implemented"
+        assert 0, "rfpscounter.record_start_new_frameun not implemented"
 
     def next(self, input):
         assert 0, "next not implemented"
@@ -290,8 +300,6 @@ class StateMachine:
         img_collection, names_of_file, cv2_img = get_frame()
         self.currentState = self.currentState.next(cv2_img)
         self.currentState.run((img_collection, names_of_file))
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 class Waiting(State):
     """
@@ -308,39 +316,40 @@ class Waiting(State):
         if frame_contains_darkness:
             return DodecaStateMachine.waiting
         print("Transitioned: Recording")
+        fpscounter.record_start_new_frame()
         return DodecaStateMachine.recording
-
 
 class Recording(State):
     """
     Recording the image prediction frames and waiting for detecting a pause
-    to transition to replay statecimport os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+    to transition to replay statec
     """
 
     def run(self, image_frames):
         global prediction_counter
         global frames_to_remove
-        fpscounter.record_start_new_frame()
+        global should_increase_length
+        
         img_collection, names_of_file = image_frames
         activation_vectors, header, img_coll_bn = MODEL.get_activations(
             MODEL_GRAPH, img_collection, names_of_file)
         activation_vector = prediction_postprocessing(activation_vectors)
-        fpscounter.record_end_new_frame()
+        activation_vector = soundvector_postprocessing(activation_vector)
         prediction_counter += 1
         if LIVE_REPLAY:
             random_value = 0
         else:
             random_value = random.randint(
                 MESSAGE_RANDOMIZER_START, MESSAGE_RANDOMIZER_END)
-            should_increase_length = random.randint(
-                0, 1)
+            should_increase_length = should_increase_length + random.uniform(-1, 1)
+            should_increase_length = np.clip(should_increase_length, -5, 5)
+        print("should increase length", should_increase_length)        
         prediction_buffer.append((activation_vector, prediction_counter))
-        if should_increase_length:
+        if should_increase_length>0:
             for i in range(random_value):
                 prediction_buffer.append((activation_vector, prediction_counter))
         else:
-            frames_to_remove += random_value - 1
+            frames_to_remove += random_value
         while(frames_to_remove > 0):
                  if len(prediction_buffer) > MINIMUM_MESSAGE_LENGTH:
                      prediction_buffer.pop()
@@ -352,17 +361,28 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
         global prediction_counter
         _frame_contains_darkness, pause_detected = contains_darkness_pause_detected(
             image_frame)
+        print("Prediction Counter: ")
+        print(prediction_counter)
+        print("len(prediction_buffer): ")
+        print(len(prediction_buffer))
         if pause_detected:
-            if prediction_counter < MINIMUM_MESSAGE_LENGTH:
+            prediction_buffer_remove_pause()
+            print("Prediction Counter: ")
+            print(prediction_counter)
+            print("len(prediction_buffer): ")
+            print(len(prediction_buffer))
+            fpscounter.record_end_new_frame(prediction_counter)
+            if len(prediction_buffer) < MINIMUM_MESSAGE_LENGTH:
                  print("Transitioned: Waiting")
-                 prediction_counter = frames_to_remove = 0
                  prediction_buffer.clear()
+                 prediction_counter = frames_to_remove = 0
                  return DodecaStateMachine.waiting
             print("Transitioned: Replaying")
-            prediction_buffer_remove_pause()
             prediction_counter = frames_to_remove = 0
             return DodecaStateMachine.replaying
         else:
+            if len(prediction_buffer) == PREDICTION_BUFFER_MAXLEN:
+                fpscounter.record_end_new_frame(PREDICTION_BUFFER_MAXLEN)
             return DodecaStateMachine.recording
 
 
@@ -398,10 +418,13 @@ pause_counter = 0
 prediction_counter = 0
 frames_to_remove = 0
 fpscounter = FPSCounter()
+should_increase_length = 0
+soundvector_purpose = np.zeros(shape=(8))
 
 DodecaStateMachine.waiting = Waiting()
 DodecaStateMachine.recording = Recording()
 DodecaStateMachine.replaying = Replaying()
+
 
 if LIVE_REPLAY:
     def new_next_recording(image_frame):
