@@ -11,7 +11,7 @@ def tx2_usb_reset():
     """
     reset all usb ports on Jetson Tx2 (power off/on)
     """
-    for usb_port in ["", ""]:
+    for usb_port in ["001/011"]:
         os.system("usbreset /dev/bus/usb/{}".format(usb_port))
 
 class Camera():
@@ -103,10 +103,11 @@ class Camera():
         if hasattr(self, "restarted"):
             print("Resetting USB port")
             tx2_usb_reset()
-        self.release()
         try:
+            print("Get video capture")
             self.get_video_capture()
         except Exception as e:
+            print("Can not get video capture")
             print(e)
 
         self.restarted = True
@@ -119,10 +120,14 @@ class Camera():
         This will enable iterating over camera frames.
         :return: Tupel consisting of next opencv frame and python image library frame
         """
-        ret, frame = self.video_capture.read()
-        if not frame:
-            self.restart()
-            raise Exception("Video device connection broke")
+        ret, frame = None, None
+        for i in range(60):
+            ret, frame = self.video_capture.read()
+            if frame is not None:
+                break
+            if i is 59:
+                print("Restarting camera")
+                self.restart()
         frame = self.crop_frame(frame)
         cv2_im = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         pil_im = Image.fromarray(cv2_im)
