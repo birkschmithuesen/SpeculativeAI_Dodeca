@@ -32,11 +32,16 @@ var global_decay = 0.1;
 var oscOutForTraining = NetAddr.new("2.0.0.3", 8005);
 var trainingsData = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 
-
+s.addr.postln;
 
 ///////////////////////////////////////////////////////////
 //   OSC
 ///////////////////////////////////////////////////////////
+
+//Print out server health in timeinterval to check responsiveness
+Routine {
+    loop { "Server unresponsive:".post; s.unresponsive.postln; 1.wait };
+}.play;
 
 OSCdef("sendTrainData",
 	{
@@ -173,7 +178,7 @@ OSCdef("mixer/lead",
 OSCdef("sound",
 	{
 		arg msg;
-		msg.postln;
+		//msg.postln;
 		a.set(\t_env, 1); //call this everytime an osc msg comes in
 		bassDrone_vol.set(msg[1]);
 		bassDrone_bw.set(msg[2]);
