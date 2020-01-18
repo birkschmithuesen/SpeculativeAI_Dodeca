@@ -428,8 +428,8 @@ DodecaStateMachine.replaying = Replaying()
 screen = screeninfo.get_monitors().pop()
 
 vision_camera.cv2.namedWindow("dodeca", cv2.WINDOW_NORMAL)
-vision_camera.cv2.resizeWindow("dodeca", (int(screen.height/2), int(screen.height/2)))
-vision_camera.cv2.moveWindow("dodeca", int(screen.width/2), 0)
+vision_camera.cv2.resizeWindow("dodeca", (int(screen.height), int(screen.height)))
+vision_camera.cv2.moveWindow("dodeca", int(screen.width-screen.height), 0)
 #vision_camera.cv2.setWindowProperty("dodeca",cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
 
