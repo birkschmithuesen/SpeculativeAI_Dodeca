@@ -71,7 +71,9 @@ class Camera():
             (frame, pil_im) = frames
             # Display the resulting frame
             frame = self.crop_frame(frame)
-            cv2.imshow('frame', frame)
+            cv2.namedWindow("dodeca", cv2.WND_PROP_FULLSCREEN)
+            cv2.setWindowProperty("dodeca",cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
+            cv2.imshow("dodeca", frame)
             if cv2.waitKey(20) & 0xFF == ord('q'):
                 break
         cv2.destroyAllWindows()

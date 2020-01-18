@@ -5,6 +5,7 @@ import random
 import numpy as np
 import cv2
 import os
+import screeninfo
 from pythonosc import udp_client
 from conversation.vision_camera import Camera
 from conversation import neuralnet_vision, neuralnet_dictionary, configuration, vision_camera
@@ -229,7 +230,6 @@ def play_buffer():
             # ensure playback speed matches framerate
             time.sleep(1 / replay_fps)
 
-
 def get_frame():
     """
     returns tuple with frame andwar name of file each in an array
@@ -237,7 +237,7 @@ def get_frame():
     for frames in CAMERA:
         cv2_img, pil_img = frames
         if SHOW_FRAMES:
-            vision_camera.cv2.imshow('frame', cv2_img)
+            vision_camera.cv2.imshow("dodeca", cv2_img)
             key = vision_camera.cv2.waitKey(20)
             process_key(key)
         img_collection = [pil_img]
@@ -424,6 +424,13 @@ soundvector_purpose = np.zeros(shape=(8))
 DodecaStateMachine.waiting = Waiting()
 DodecaStateMachine.recording = Recording()
 DodecaStateMachine.replaying = Replaying()
+
+screen = screeninfo.get_monitors().pop()
+
+vision_camera.cv2.namedWindow("dodeca", cv2.WINDOW_NORMAL)
+vision_camera.cv2.resizeWindow("dodeca", (int(screen.height/2), int(screen.height/2)))
+vision_camera.cv2.moveWindow("dodeca", int(screen.width/2), 0)
+#vision_camera.cv2.setWindowProperty("dodeca",cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
 
 if LIVE_REPLAY:
