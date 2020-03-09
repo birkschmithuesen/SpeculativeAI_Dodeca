@@ -13,6 +13,10 @@ This creates a feedback loop between two machines that creates their endless aud
 The state of the neural networks is reflected in simple light brightness and pure audio signals. The uninterpreted raw data create its own aesthetics and show the processes within the AI. Both networks work together to develop an abstract, audiovisual language. Visitors can intervene in the communication between the AI systems.
 
 # Running
+
+Make sure that the usb ports in `conversation/vision_camera.py` in `tx2_usb_reset` match where your camera is connected. Check with `lsusb`. 
+
+    sudo ./helpers/install_usbreset.sh
     pip3 install -r requirements.txt
     python3 main.py
 

@@ -2,10 +2,17 @@
 This module contains objects needed to capture camera frames, send osc output and further
 functionality needed for https://github.com/birkschmithuesen/SpeculativeArtificialIntelligence .
 """
+import os
 import platform
 import cv2
 from PIL import Image
 
+def tx2_usb_reset():
+    """
+    reset all usb ports on Jetson Tx2 (power off/on)
+    """
+    for usb_port in ["001/011"]:
+        os.system("usbreset /dev/bus/usb/{}".format(usb_port))
 
 class Camera():
     """
@@ -27,13 +34,7 @@ class Camera():
         self.frame_height = frame_height
         self.frame_section_width = frame_section_width
         self.frame_section_height = frame_section_height
-        id = 1
-        if any(platform.win32_ver()):
-            self.video_capture = cv2.VideoCapture(id + cv2.CAP_DSHOW)
-        else:
-            self.video_capture = cv2.VideoCapture(id)
-        if not self.video_capture.isOpened():
-            raise Exception("Could not open video device")
+        self.get_video_capture()
         # Set properties. Each returns === True on success (i.e. correct
         # resolution)
         #self.video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, frame_section_width)
@@ -45,7 +46,7 @@ class Camera():
         self.video_capture.set(cv2.CAP_PROP_FPS, fps)
         self.video_capture.set(cv2.CAP_PROP_SETTINGS, 0)
         self.video_capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25) #0.25 is off, 0.75 is on
-        self.video_capture.set(cv2.CAP_PROP_EXPOSURE, 0.03)
+        self.video_capture.set(cv2.CAP_PROP_EXPOSURE, 0.01)
         self.video_capture.set(cv2.CAP_PROP_BRIGHTNESS, 0.5)
         print("Initializing camera")
         print("actual_frame_width:" + str(self.actual_frame_width))
@@ -53,7 +54,14 @@ class Camera():
         print("actual exposure:" + str(self.video_capture.get(cv2.CAP_PROP_EXPOSURE)))
         print("actual brightness:" + str(self.video_capture.get(cv2.CAP_PROP_BRIGHTNESS)))
 
-
+    def get_video_capture(self):
+        id = 1
+        if any(platform.win32_ver()):
+            self.video_capture = cv2.VideoCapture(id + cv2.CAP_DSHOW)
+        else:
+            self.video_capture = cv2.VideoCapture(id)
+        if not self.video_capture.isOpened():
+            raise Exception("Could not open video device")
 
     def show_capture(self):
         """
@@ -63,7 +71,9 @@ class Camera():
             (frame, pil_im) = frames
             # Display the resulting frame
             frame = self.crop_frame(frame)
-            cv2.imshow('frame', frame)
+            cv2.namedWindow("dodeca", cv2.WND_PROP_FULLSCREEN)
+            cv2.setWindowProperty("dodeca",cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
+            cv2.imshow("dodeca", frame)
             if cv2.waitKey(20) & 0xFF == ord('q'):
                 break
         cv2.destroyAllWindows()
@@ -88,6 +98,22 @@ class Camera():
         """
         self.video_capture.release()
 
+    def restart(self):
+        """
+        Restart the camera and if that doesn't work reset the usb port
+        """
+        if hasattr(self, "restarted"):
+            print("Resetting USB port")
+            tx2_usb_reset()
+        try:
+            print("Get video capture")
+            self.get_video_capture()
+        except Exception as e:
+            print("Can not get video capture")
+            print(e)
+
+        self.restarted = True
+
     def __iter__(self):
         return self
 
@@ -96,7 +122,14 @@ class Camera():
         This will enable iterating over camera frames.
         :return: Tupel consisting of next opencv frame and python image library frame
         """
-        ret, frame = self.video_capture.read()
+        ret, frame = None, None
+        for i in range(60):
+            ret, frame = self.video_capture.read()
+            if frame is not None:
+                break
+            if i is 59:
+                print("Restarting camera")
+                self.restart()
         frame = self.crop_frame(frame)
         cv2_im = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         pil_im = Image.fromarray(cv2_im)
