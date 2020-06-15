@@ -9,3 +9,4 @@ joblib==0.13.2
 pytest==4.4.0
 Python-osc==1.7.0
 pyqt5==5.10.1
+screeninfo==0.6.1

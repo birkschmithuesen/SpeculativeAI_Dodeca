@@ -32,26 +32,26 @@ SHOW_FRAMES = True  # show window frames
 # these set tha random range for inserting/removing predictions
 # N times into the prediction buffer
 MESSAGE_RANDOMIZER_START = 0 # 0 - write the frame alays one time. 1 - write the message -1 till 2 times into the buffer
-MESSAGE_RANDOMIZER_END = 1
-SOUND_RANDOMIZER_START = -0.05 # set the minimum value, how much the volume of the different synths will be changed by chance
-SOUND_RANDOMIZER_END = 0.05 # set the maximum value, how much the volume of the different synths will be changed by chance
-SOUND_RANDOMIZER_MIN = -0.2
-SOUND_RANDOMIZER_MAX = 0.2
+MESSAGE_RANDOMIZER_END = 0 #Experimenta: 1
+SOUND_RANDOMIZER_START = 0 # Experimenta: -0.05 # set the minimum value, how much the volume of the different synths will be changed by chance
+SOUND_RANDOMIZER_END = 0 # Experimenta: 0.05 # set the maximum value, how much the volume of the different synths will be changed by chance
+SOUND_RANDOMIZER_MIN = 0 # Experimenta: -0.2
+SOUND_RANDOMIZER_MAX = 0 # Experimenta: 0.2
 
 # realfps * REPLAY_FPS_FACTOR is used for replaying the prediction buffer
 MINIMUM_MESSAGE_LENGTH  = 4 # ignore all messages below this length
 REPLAY_FPS_FACTOR = 1
 PAUSE_LENGTH = 9 # length in frames of darkness that triggers pause event
 # Threshhold defining pause if frame brightness is below the value
-PAUSE_BRIGHTNESS_THRESH = 20 #this is the threshold for each pixel to be counted
-PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH = 10 # this is the threshold for the number of counted pixels. Default is 50 for low ambient rooms
+PAUSE_BRIGHTNESS_THRESH = 80 #this is the threshold for each pixel to be counted
+PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH = 20 # this is the threshold for the number of counted pixels. Default is 50 for low ambient rooms
 
 PREDICTION_BUFFER_MAXLEN = 128 # 4 seconds * 11 fps
 
 CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
 
-ZOOM_AREA_WIDTH = 480 #480 is full sensor width
-ZOOME_AREA_HEIGHT = 480 #480 is full sensor width
+ZOOM_AREA_WIDTH = 400 #480 is full sensor width
+ZOOME_AREA_HEIGHT = 400 #480 is full sensor width
 
 CAMERA = Camera(224, 224, ZOOM_AREA_WIDTH, ZOOME_AREA_HEIGHT)
 
@@ -277,7 +277,7 @@ def soundvector_postprocessing(prediction_vector):
     """
     for i in range (0, len(prediction_vector)):
         soundvector_purpose[i] = np.clip(soundvector_purpose[i] + random.uniform(SOUND_RANDOMIZER_START, SOUND_RANDOMIZER_END), SOUND_RANDOMIZER_MIN, SOUND_RANDOMIZER_MAX)
-    print(soundvector_purpose)
+    #print(soundvector_purpose)
     prediction_vector = np.clip(prediction_vector + soundvector_purpose, 0, 1)
     #prediction_vector[0] = np.clip(prediction_vector[0] + random.uniform(VOLUME_RANDOMIZER_START, VOLUME_RANDOMIZER_END), 0, 1)
     #prediction_vector[6] = np.clip(prediction_vector[6] + random.uniform(VOLUME_RANDOMIZER_START, VOLUME_RANDOMIZER_END), 0, 1)
@@ -343,7 +343,7 @@ class Recording(State):
                 MESSAGE_RANDOMIZER_START, MESSAGE_RANDOMIZER_END)
             should_increase_length = should_increase_length + random.uniform(-1, 1)
             should_increase_length = np.clip(should_increase_length, -5, 5)
-        print("should increase length", should_increase_length)        
+        #print("should increase length", should_increase_length)        
         prediction_buffer.append((activation_vector, prediction_counter))
         if should_increase_length>0:
             for i in range(random_value):
@@ -361,10 +361,8 @@ class Recording(State):
         global prediction_counter
         _frame_contains_darkness, pause_detected = contains_darkness_pause_detected(
             image_frame)
-        print("Prediction Counter: ")
-        print(prediction_counter)
-        print("len(prediction_buffer): ")
-        print(len(prediction_buffer))
+        #print("Prediction Counter: ", prediction_counter)
+        #print("len(prediction_buffer): ", len(prediction_buffer))
         if pause_detected:
             prediction_buffer_remove_pause()
             print("Prediction Counter: ")
