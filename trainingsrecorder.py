@@ -5,6 +5,14 @@ and saves it to a buffer. After hitting ctrl-C in the terminal or receiving
 any data on address '/stop' the recording process stops and the sound vectors
 will be saved along neural net prediction output vectors based camera frames
 that were saved during recording.
+
+HowTo:
+- Check IP address in Vezer and SuperCollider
+- Vezer(Trainings Notebook) sends sound data to SuperCollider
+- Vezer sends '/sendTrainData' command to SuperCollider. By this command,
+SuperCollider will send all sound messages stored in one vector
+'/record_sound_vector' to this Python Dispatcher
+- send '/stop' message from Vezer to this patch, to stop recording
 """
 
 import os
