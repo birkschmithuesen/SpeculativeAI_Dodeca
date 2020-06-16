@@ -26,7 +26,7 @@ MODEL_SAVE_FILE_PATH = './data/dictionary_model.h5'
 INPUT_DIM = 512
 BATCH_SIZE = 32
 EPOCHS = 30
-INITIAL_EPOCHS = 500
+INITIAL_EPOCHS = 100
 
 HIDDEN1_DIM = 512
 HIDDEN2_DIM = 64
@@ -89,7 +89,7 @@ def train_model():
             activation='sigmoid',
             kernel_initializer=my_init,
             bias_initializer=my_init))
-    sgd = SGD(lr=0.03, decay=1e-6, momentum=0.9, nesterov=True)
+    sgd = SGD(lr=0.2, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(
         loss='binary_crossentropy',
         optimizer=sgd,
