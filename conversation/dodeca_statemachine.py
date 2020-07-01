@@ -219,8 +219,11 @@ def play_buffer():
     Send out all sframes_to_reound predictions in the buffer with the
     configured REPLAY_FPS_FACTOR until it's empty
     """
-    real_fps = fpscounter.get_average_fps()
-    replay_fps = real_fps * REPLAY_FPS_FACTOR
+    if not LIVE_REPLAY:
+        real_fps = fpscounter.get_average_fps()
+        replay_fps = real_fps * REPLAY_FPS_FACTOR
+    else:
+        replay_fps = 0
     print("Playing Buffer with {} FPS\n".format(replay_fps))
     while len(prediction_buffer) > 0:
         prediction = prediction_buffer.popleft()[0]
