@@ -89,8 +89,12 @@ class Camera():
         y = (self.actual_frame_height - self.frame_section_height) / 2
         x = int(x)
         y = int(y)
-        cropped_frame = frame[y:y + self.frame_section_height, x:x + self.frame_section_width]
-        return cv2.resize(cropped_frame, (self.frame_height, self.frame_width), interpolation=cv2.INTER_AREA)
+        mask = np.zeros((self.frame_height, self.frame_width), np.uint8)
+        circle_img = cv2.circle(mask, (self.frame_width/2, self.frame_width/2), self.frame_width-10, (255,255,255), thickness=-1)
+        cropped_mask = frame[y:y + self.frame_section_height, x:x + self.frame_section_width]
+        resized_frame = cv2.resize(cropped_frame, (self.frame_height, self.frame_width), interpolation=cv2.INTER_AREA)
+        return cv2.bitwise_and(resized_frame, resized_frame, mask=circle_mask)
+        
 
     def release(self):
         """
