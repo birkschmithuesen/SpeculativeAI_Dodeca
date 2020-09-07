@@ -44,7 +44,7 @@ REPLAY_FPS_FACTOR = 2
 PAUSE_LENGTH = 5 # length in frames of darkness that triggers pause event
 # Threshhold defining pause if frame brightness is below the value
 PAUSE_BRIGHTNESS_THRESH = 80 #this is the threshold for each pixel to be counted
-PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH = 4900 # this is the threshold for the number of counted pixels. Default is 50 for low ambient rooms
+PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH = 200 # this is the threshold for the number of counted pixels. Default is 50 for low ambient rooms
 
 PREDICTION_BUFFER_MAXLEN = 256 # 4 seconds * 11 fps
 

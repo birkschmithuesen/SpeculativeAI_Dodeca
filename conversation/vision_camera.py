@@ -5,6 +5,7 @@ functionality needed for https://github.com/birkschmithuesen/SpeculativeArtifici
 import os
 import platform
 import cv2
+import numpy as np
 from PIL import Image
 
 def tx2_usb_reset():
@@ -46,8 +47,10 @@ class Camera():
         self.video_capture.set(cv2.CAP_PROP_FPS, fps)
         self.video_capture.set(cv2.CAP_PROP_SETTINGS, 0)
         self.video_capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25) #0.25 is off, 0.75 is on
-        self.video_capture.set(cv2.CAP_PROP_EXPOSURE, 0.005) #0.01
+        self.video_capture.set(cv2.CAP_PROP_EXPOSURE, 0.01)
         self.video_capture.set(cv2.CAP_PROP_BRIGHTNESS, 0.5)
+        mask_base = np.zeros((self.frame_height, self.frame_width), np.uint8)
+        self.circle_mask = cv2.circle(mask_base, (int(self.frame_height/2), int(self.frame_width/2)), int(self.frame_height/2)-20, (255, 255, 255), thickness=-1)
         print("Initializing camera")
         print("actual_frame_width:" + str(self.actual_frame_width))
         print("actual_frame_height:" + str(self.actual_frame_height))
@@ -89,12 +92,10 @@ class Camera():
         y = (self.actual_frame_height - self.frame_section_height) / 2
         x = int(x)
         y = int(y)
-        mask = np.zeros((self.frame_height, self.frame_width), np.uint8)
-        circle_img = cv2.circle(mask, (self.frame_width/2, self.frame_width/2), self.frame_width-10, (255,255,255), thickness=-1)
-        cropped_mask = frame[y:y + self.frame_section_height, x:x + self.frame_section_width]
+        cropped_frame = frame[y:y + self.frame_section_height, x:x + self.frame_section_width]
         resized_frame = cv2.resize(cropped_frame, (self.frame_height, self.frame_width), interpolation=cv2.INTER_AREA)
-        return cv2.bitwise_and(resized_frame, resized_frame, mask=circle_mask)
-        
+        masked_frame = cv2.bitwise_and(resized_frame, resized_frame, mask=self.circle_mask)
+        return masked_frame
 
     def release(self):
         """
