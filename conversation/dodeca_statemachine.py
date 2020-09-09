@@ -379,6 +379,7 @@ class Waiting(State):
             return DodecaStateMachine.waiting
         print("Transitioned: Recording")
         fpscounter.record_start_new_frame()
+        waiting_start_time = None
         return DodecaStateMachine.recording
 
 class Recording(State):
