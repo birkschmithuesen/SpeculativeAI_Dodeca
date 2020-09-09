@@ -45,6 +45,10 @@ PAUSE_LENGTH = 5 # length in frames of darkness that triggers pause event
 # Threshhold defining pause if frame brightness is below the value
 PAUSE_BRIGHTNESS_THRESH = 80 #this is the threshold for each pixel to be counted
 PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH = 200 # this is the threshold for the number of counted pixels. Default is 50 for low ambient rooms
+MAX_CONSTANT_STATE_DURATION_BEFORE_BRIGHTNESS_INCREASE_DECREASE = 10 # the number of seconds before the recording is stopped and the PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH increased
+BRIGHTNESS_AVERAGES_BUFFER_MAXLEN = 15 # from how many replays do we calculate the brightness average for adjusting PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH
+BRIGHTNESS_AUTO_ADJUST_FACTOR = 0.5 # the magnitude of adjustment to PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH after each replay based on brightness averages
+PAUSE_BRIGHTNESS_DECREMENT = PAUSE_BRIGHTNESS_INCREMENT = 500 # constant change when stuck in a state other than replaying
 
 PREDICTION_BUFFER_MAXLEN = 256 # 4 seconds * 11 fps
 
@@ -53,7 +57,9 @@ CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
 ZOOM_AREA_WIDTH = 380 #480 is full sensor width
 ZOOME_AREA_HEIGHT = 380 #480 is full sensor width
 
-CAMERA = Camera(224, 224, ZOOM_AREA_WIDTH, ZOOME_AREA_HEIGHT)
+FINAL_IMAGE_WIDTH = FINAL_IMAGE_HEIGHT = 224
+
+CAMERA = Camera(FINAL_IMAGE_WIDTH, FINAL_IMAGE_HEIGHT, ZOOM_AREA_WIDTH, ZOOME_AREA_HEIGHT)
 
 if type(tf.contrib) != type(tf): tf.contrib._warning = None
 
@@ -167,16 +173,21 @@ def reduce_to_5dim(activations):
     return res_5dim
 
 
-def contains_darkness(image_frame):
-    """
-    Return true if average frame brightness is
-    below PAUSE_BRIGHTNESS_THRESH
-    """
+def count_image_bright_pixels(image_frame):
     image = np.zeros((224, 224, 3), np.uint8)
     cv2.cvtColor(image_frame, cv2.COLOR_RGB2HSV, image)
     brightnessvalues = image[:, :, 2]
     counter = np.sum(brightnessvalues > PAUSE_BRIGHTNESS_THRESH)
     print("Pixels above threshold: {}\n".format(counter))
+    return counter
+
+def contains_darkness(image_frame):
+    """
+    Return true if average frame brightness is
+    below PAUSE_BRIGHTNESS_THRESH
+    """
+    counter = count_image_bright_pixels(image_frame)
+    print( "PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH = {}".format(PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH))
     return counter < PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH
 
 
@@ -219,6 +230,8 @@ def play_buffer():
     Send out all sframes_to_reound predictions in the buffer with the
     configured REPLAY_FPS_FACTOR until it's empty
     """
+    global brightness_averages
+    brightness_values = []
     if not LIVE_REPLAY:
         real_fps = fpscounter.get_average_fps()
         replay_fps = real_fps * REPLAY_FPS_FACTOR
@@ -226,12 +239,47 @@ def play_buffer():
         replay_fps = 0
     print("Playing Buffer with {} FPS\n".format(replay_fps))
     while len(prediction_buffer) > 0:
+        img_collection, names, cv2_img = get_frame()
+        brightness_value = count_image_bright_pixels(cv2_img)
+        brightness_values.append(brightness_value)
         prediction = prediction_buffer.popleft()[0]
         print(prediction)
         CLIENT.send_message("/sound", prediction)
         if replay_fps > 0:
             # ensure playback speed matches framerate
             time.sleep(1 / replay_fps)
+    avg_brightness = sum(brightness_values)/len(brightness_values)
+    brightness_averages.append(avg_brightness)
+    adjust_brightness_threshhold()
+
+def check_brightness_threshhold():
+    """
+    Check that the PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH is within
+    a valid range and fix it if not
+    """
+    global PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH
+    if PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH < 0:
+        PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH = 0
+        print("Clipped PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH to MIN")
+    elif PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH > FINAL_IMAGE_HEIGHT * FINAL_IMAGE_WIDTH:
+        PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH = FINAL_IMAGE_HEIGHT * FINAL_IMAGE_WIDTH
+        print("Clipped PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH to MAX")
+    PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH = int(PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH)
+
+def adjust_brightness_threshhold():
+    """
+    Adjust PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH for better
+    activity detection
+    """
+    global brightness_averages
+    global PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH
+    brightness_sum = sum(brightness_averages)
+    brightness_avg = brightness_sum / len(brightness_averages)
+
+    diff = PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH - brightness_avg
+    PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH -= BRIGHTNESS_AUTO_ADJUST_FACTOR * diff
+    check_brightness_threshhold()
+
 
 def get_frame():
     """
@@ -314,8 +362,19 @@ class Waiting(State):
         pass
 
     def next(self, image_frame):
+        global waiting_start_time
+        global PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH
+
         frame_contains_darkness, _pause_detected = contains_darkness_pause_detected(
             image_frame)
+
+        if not waiting_start_time:
+            waiting_start_time = time.time()
+        if time.time() - waiting_start_time > MAX_CONSTANT_STATE_DURATION_BEFORE_BRIGHTNESS_INCREASE_DECREASE:
+            PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH -= PAUSE_BRIGHTNESS_DECREMENT
+            print("Recording above max duration. Adjusting PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH to {}".format(PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH))
+            check_brightness_threshhold()
+
         if frame_contains_darkness:
             return DodecaStateMachine.waiting
         print("Transitioned: Recording")
@@ -332,7 +391,7 @@ class Recording(State):
         global prediction_counter
         global frames_to_remove
         global should_increase_length
-        
+
         img_collection, names_of_file = image_frames
         activation_vectors, header, img_coll_bn = MODEL.get_activations(
             MODEL_GRAPH, img_collection, names_of_file)
@@ -346,7 +405,7 @@ class Recording(State):
                 MESSAGE_RANDOMIZER_START, MESSAGE_RANDOMIZER_END)
             should_increase_length = should_increase_length + random.uniform(-1, 1)
             should_increase_length = np.clip(should_increase_length, -5, 5)
-        #print("should increase length", should_increase_length)        
+        #print("should increase length", should_increase_length)
         prediction_buffer.append((activation_vector, prediction_counter))
         if should_increase_length>0:
             for i in range(random_value):
@@ -362,11 +421,24 @@ class Recording(State):
 
     def next(self, image_frame):
         global prediction_counter
+        global recording_start_time
+        global PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH
+
         _frame_contains_darkness, pause_detected = contains_darkness_pause_detected(
             image_frame)
+
+        if not recording_start_time:
+            recording_start_time = time.time()
+        if time.time() - recording_start_time > MAX_CONSTANT_STATE_DURATION_BEFORE_BRIGHTNESS_INCREASE_DECREASE:
+            PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH += PAUSE_BRIGHTNESS_INCREMENT
+            check_brightness_threshhold()
+            print("Recording above max duration. Adjusting PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH to {}".format(PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH))
+            pause_detected = True
+
         #print("Prediction Counter: ", prediction_counter)
         #print("len(prediction_buffer): ", len(prediction_buffer))
         if pause_detected:
+            recording_start_time = None
             prediction_buffer_remove_pause()
             print("Prediction Counter: ")
             print(prediction_counter)
@@ -421,6 +493,9 @@ frames_to_remove = 0
 fpscounter = FPSCounter()
 should_increase_length = 0
 soundvector_purpose = np.zeros(shape=(8))
+recording_start_time = None
+waiting_start_time = None
+brightness_averages = deque(maxlen=BRIGHTNESS_AVERAGES_BUFFER_MAXLEN)
 
 DodecaStateMachine.waiting = Waiting()
 DodecaStateMachine.recording = Recording()

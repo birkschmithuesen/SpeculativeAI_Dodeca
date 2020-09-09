@@ -61,8 +61,14 @@ class Camera():
         id = 1
         if any(platform.win32_ver()):
             self.video_capture = cv2.VideoCapture(id + cv2.CAP_DSHOW)
+            print("Detected Windows platform")
+        elif any(platform.mac_ver()):
+            id = 0
+            self.video_capture = cv2.VideoCapture(id)
+            print("Detected Mac platform")
         else:
             self.video_capture = cv2.VideoCapture(id)
+            print("Detected other platform (likely Linux)")
         if not self.video_capture.isOpened():
             raise Exception("Could not open video device")
 
