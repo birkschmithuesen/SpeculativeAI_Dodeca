@@ -62,7 +62,7 @@ class Camera():
         if any(platform.win32_ver()):
             self.video_capture = cv2.VideoCapture(id + cv2.CAP_DSHOW)
             print("Detected Windows platform")
-        elif any(platform.mac_ver()):
+        elif any((any(x) for x in platform.mac_ver())):
             id = 0
             self.video_capture = cv2.VideoCapture(id)
             print("Detected Mac platform")
