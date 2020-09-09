@@ -45,10 +45,10 @@ PAUSE_LENGTH = 5 # length in frames of darkness that triggers pause event
 # Threshhold defining pause if frame brightness is below the value
 PAUSE_BRIGHTNESS_THRESH = 80 #this is the threshold for each pixel to be counted
 PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH = 200 # this is the threshold for the number of counted pixels. Default is 50 for low ambient rooms
-MAX_CONSTANT_STATE_DURATION_BEFORE_BRIGHTNESS_INCREASE_DECREASE = 10 # the number of seconds before the recording is stopped and the PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH increased
+MAX_CONSTANT_STATE_DURATION_BEFORE_BRIGHTNESS_INCREASE_DECREASE = 30 # the number of seconds before the recording is stopped and the PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH increased
 BRIGHTNESS_AVERAGES_BUFFER_MAXLEN = 15 # from how many replays do we calculate the brightness average for adjusting PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH
-BRIGHTNESS_AUTO_ADJUST_FACTOR = 0.5 # the magnitude of adjustment to PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH after each replay based on brightness averages
-PAUSE_BRIGHTNESS_DECREMENT = PAUSE_BRIGHTNESS_INCREMENT = 500 # constant change when stuck in a state other than replaying
+BRIGHTNESS_AUTO_ADJUST_FACTOR = 0.1 # the magnitude of adjustment to PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH after each replay based on brightness averages
+PAUSE_BRIGHTNESS_DECREMENT = PAUSE_BRIGHTNESS_INCREMENT = 200 # constant change when stuck in a state other than replaying
 
 PREDICTION_BUFFER_MAXLEN = 256 # 4 seconds * 11 fps
 
