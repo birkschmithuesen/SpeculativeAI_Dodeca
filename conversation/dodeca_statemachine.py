@@ -44,13 +44,13 @@ REPLAY_FPS_FACTOR = 2
 PAUSE_LENGTH = 5 # length in frames of darkness that triggers pause event
 # Threshhold defining pause if frame brightness is below the value
 PAUSE_BRIGHTNESS_THRESH = 80 #this is the threshold for each pixel to be counted
-PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH = 200 # this is the threshold for the number of counted pixels. Default is 50 for low ambient rooms
+PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH = 30 # this is the threshold for the number of counted pixels. Default is 50 for low ambient rooms
 MAX_CONSTANT_STATE_DURATION_BEFORE_BRIGHTNESS_INCREASE_DECREASE = 30 # the number of seconds before the recording is stopped and the PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH increased
 BRIGHTNESS_AVERAGES_BUFFER_MAXLEN = 15 # from how many replays do we calculate the brightness average for adjusting PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH
 BRIGHTNESS_AUTO_ADJUST_FACTOR = 0.1 # the magnitude of adjustment to PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH after each replay based on brightness averages
 PAUSE_BRIGHTNESS_DECREMENT = PAUSE_BRIGHTNESS_INCREMENT = 200 # constant change when stuck in a state other than replaying
 
-PREDICTION_BUFFER_MAXLEN = 256 # 4 seconds * 11 fps
+PREDICTION_BUFFER_MAXLEN = 44 # 4 seconds * 11 fps
 
 CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
 
@@ -187,7 +187,7 @@ def contains_darkness(image_frame):
     below PAUSE_BRIGHTNESS_THRESH
     """
     counter = count_image_bright_pixels(image_frame)
-    print( "PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH = {}".format(PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH))
+    print( "PAUSE_BRIGHTNESS_MIN_NUM_PIXELS = {}".format(PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH))
     return counter < PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH
 
 

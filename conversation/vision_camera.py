@@ -47,10 +47,10 @@ class Camera():
         self.video_capture.set(cv2.CAP_PROP_FPS, fps)
         self.video_capture.set(cv2.CAP_PROP_SETTINGS, 0)
         self.video_capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25) #0.25 is off, 0.75 is on
-        self.video_capture.set(cv2.CAP_PROP_EXPOSURE, 0.01)
+        self.video_capture.set(cv2.CAP_PROP_EXPOSURE, 0.00175)
         self.video_capture.set(cv2.CAP_PROP_BRIGHTNESS, 0.5)
         mask_base = np.zeros((self.frame_height, self.frame_width), np.uint8)
-        self.circle_mask = cv2.circle(mask_base, (int(self.frame_height/2), int(self.frame_width/2)), int(self.frame_height/2)-20, (255, 255, 255), thickness=-1)
+        self.circle_mask = cv2.circle(mask_base, (int(self.frame_height/2), int(self.frame_width/2)), int(self.frame_height/2)-17, (255, 255, 255), thickness=-1)
         print("Initializing camera")
         print("actual_frame_width:" + str(self.actual_frame_width))
         print("actual_frame_height:" + str(self.actual_frame_height))
@@ -102,6 +102,7 @@ class Camera():
         resized_frame = cv2.resize(cropped_frame, (self.frame_height, self.frame_width), interpolation=cv2.INTER_AREA)
         masked_frame = cv2.bitwise_and(resized_frame, resized_frame, mask=self.circle_mask)
         return masked_frame
+
 
     def release(self):
         """
