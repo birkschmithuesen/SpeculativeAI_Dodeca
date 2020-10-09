@@ -31,8 +31,8 @@ SHOW_FRAMES = True  # show window frames
 
 # these set tha random range for inserting/removing predictions
 # N times into the prediction buffer
-MESSAGE_RANDOMIZER_START = 0 # 0 - write the frame alays one time. 1 - write the message -1 till 2 times into the buffer
-MESSAGE_RANDOMIZER_END = 2 #Experimenta: 1
+MESSAGE_RANDOMIZER_START = 0
+MESSAGE_RANDOMIZER_END = 1 # 0 - write the frame alays one time. 1 - write the message -1 till 2 times into the buffer
 SOUND_RANDOMIZER_START = 0 # Experimenta: -0.05 # set the minimum value, how much the volume of the different synths will be changed by chance
 SOUND_RANDOMIZER_END = 0 # Experimenta: 0.05 # set the maximum value, how much the volume of the different synths will be changed by chance
 SOUND_RANDOMIZER_MIN = 0 # Experimenta: -0.2
@@ -54,8 +54,8 @@ PREDICTION_BUFFER_MAXLEN = 44 # 4 seconds * 11 fps
 
 CLIENT = udp_client.SimpleUDPClient(OSC_IP_ADDRESS, OSC_PORT)
 
-ZOOM_AREA_WIDTH = 380 #480 is full sensor width
-ZOOME_AREA_HEIGHT = 380 #480 is full sensor width
+ZOOM_AREA_WIDTH = 420 #480 is full sensor width
+ZOOME_AREA_HEIGHT = 420 #480 is full sensor width
 
 FINAL_IMAGE_WIDTH = FINAL_IMAGE_HEIGHT = 224
 
@@ -178,7 +178,7 @@ def count_image_bright_pixels(image_frame):
     cv2.cvtColor(image_frame, cv2.COLOR_RGB2HSV, image)
     brightnessvalues = image[:, :, 2]
     counter = np.sum(brightnessvalues > PAUSE_BRIGHTNESS_THRESH)
-    print("Pixels above threshold: {}\n".format(counter))
+    print("(numPixels: {}".format(counter),")")
     return counter
 
 def contains_darkness(image_frame):
@@ -187,7 +187,7 @@ def contains_darkness(image_frame):
     below PAUSE_BRIGHTNESS_THRESH
     """
     counter = count_image_bright_pixels(image_frame)
-    print( "PAUSE_BRIGHTNESS_MIN_NUM_PIXELS = {}".format(PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH))
+    print( "(thresh: {}".format(PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH),")\n")
     return counter < PAUSE_BRIGHTNESS_MIN_NUM_PIXELS_ABOVE_THRESH
 
 
@@ -200,12 +200,13 @@ def contains_darkness_pause_detected(image_frame):
     global pause_counter
     is_dark = contains_darkness(image_frame)
     if is_dark:
-        print("Pause Counter: {}\n".format(pause_counter))
+        print("WAITING... ({}/".format(pause_counter),PAUSE_LENGTH,")")
         if pause_counter >= PAUSE_LENGTH:
             pause_counter = 0
             return is_dark, True
         pause_counter += 1
     else:
+        print("LISTENING!!! (",prediction_counter,")")
         pause_counter = 0
     return is_dark, False
 
@@ -243,7 +244,7 @@ def play_buffer():
         brightness_value = count_image_bright_pixels(cv2_img)
         brightness_values.append(brightness_value)
         prediction = prediction_buffer.popleft()[0]
-        print(prediction)
+        print("\nSPEAKING (",len(prediction_buffer),")")
         CLIENT.send_message("/sound", prediction)
         if replay_fps > 0:
             # ensure playback speed matches framerate
@@ -441,10 +442,10 @@ class Recording(State):
         if pause_detected:
             recording_start_time = None
             prediction_buffer_remove_pause()
-            print("Prediction Counter: ")
-            print(prediction_counter)
-            print("len(prediction_buffer): ")
-            print(len(prediction_buffer))
+            #print("Prediction Counter: ")
+            #print(prediction_counter)
+            #print("len(prediction_buffer): ")
+            #print(len(prediction_buffer))
             fpscounter.record_end_new_frame(prediction_counter)
             if len(prediction_buffer) < MINIMUM_MESSAGE_LENGTH:
                  print("Transitioned: Waiting")
